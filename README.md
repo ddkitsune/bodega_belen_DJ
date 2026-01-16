@@ -50,10 +50,20 @@ Simplemente ejecuta `INICIAR.bat`
 
 ## 🌐 Despliegue
 
-Ver `DESPLIEGUE_VERCEL.md` para instrucciones completas de despliegue en:
-- Vercel
-- Railway
-- Otras plataformas
+### 🚂 Railway (Recomendado)
+
+**Despliegue rápido en 10 minutos:**
+
+1. **Guía Rápida**: Ver `RAILWAY_PASOS_RAPIDOS.md` - Pasos visuales con tiempos estimados
+2. **Guía Completa**: Ver `DESPLIEGUE_RAILWAY.md` - Documentación detallada
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/Deivyg4/bodega_belen_DJ)
+
+### ☁️ Otras Plataformas
+
+- **Vercel**: Ver `DESPLIEGUE_VERCEL.md`
+- **Heroku**: Compatible con Procfile incluido
+- **Render**: Compatible con configuración actual
 
 ## 📁 Estructura del Proyecto
 
