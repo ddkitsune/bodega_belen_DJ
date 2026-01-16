@@ -7,3 +7,5 @@ gunicorn==23.0.0
 django-import-export==4.4.0
 openpyxl==3.1.5
 tablib==3.9.0
+whitenoise==6.8.2
+dj-database-url==2.3.0

@@ -27,7 +27,7 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-x1q7upfm0q@o8u3o-ak1_
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,.vercel.app', cast=Csv())
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,.vercel.app,.railway.app', cast=Csv())
 
 
 # Application definition
@@ -49,6 +49,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # WhiteNoise para archivos estáticos
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -84,6 +85,7 @@ WSGI_APPLICATION = 'bodega_belen.wsgi.application'
 
 import sys
 import os
+import dj_database_url
 
 # Detectar si se está ejecutando como .exe
 if getattr(sys, 'frozen', False):
@@ -94,8 +96,17 @@ else:
     DB_DIR = BASE_DIR
 
 # Configuración de base de datos según entorno
-if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('VERCEL'):
-    # Producción: PostgreSQL
+if os.environ.get('DATABASE_URL'):
+    # Railway o cualquier servicio que proporcione DATABASE_URL
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+elif os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('VERCEL'):
+    # Producción: PostgreSQL (configuración manual)
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -159,6 +170,9 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
+
+# WhiteNoise configuration
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files
 MEDIA_URL = '/media/'
