@@ -96,26 +96,30 @@ else:
     DB_DIR = BASE_DIR
 
 # Configuración de base de datos según entorno
-if os.environ.get('DATABASE_URL'):
-    # Railway o cualquier servicio que proporcione DATABASE_URL
+if 'VERCEL' in os.environ:
+    # Vercel: PostgreSQL (Vercel Postgres usa POSTGRES_URL o DATABASE_URL)
+    database_url = os.environ.get('POSTGRES_URL') or os.environ.get('DATABASE_URL')
+    
+    # fix para sqlalchemy 1.4+ que requiere postgresql:// en vez de postgres://
+    if database_url and database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=database_url,
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=True,
+        )
+    }
+elif os.environ.get('DATABASE_URL'):
+    # Otros entornos con DATABASE_URL
     DATABASES = {
         'default': dj_database_url.config(
             default=os.environ.get('DATABASE_URL'),
             conn_max_age=600,
             conn_health_checks=True,
         )
-    }
-elif os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('VERCEL'):
-    # Producción: PostgreSQL (configuración manual)
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': config('DB_NAME', default='railway'),
-            'USER': config('DB_USER', default='postgres'),
-            'PASSWORD': config('DB_PASSWORD', default=''),
-            'HOST': config('DB_HOST', default='localhost'),
-            'PORT': config('DB_PORT', default='5432'),
-        }
     }
 else:
     # Desarrollo local: SQLite

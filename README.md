@@ -48,22 +48,26 @@ Abre tu navegador en: http://127.0.0.1:8000
 
 Simplemente ejecuta `INICIAR.bat`
 
-## 🌐 Despliegue
+## 🌐 Despliegue en Vercel (Gratis)
 
-### 🚂 Railway (Recomendado)
+Este proyecto está configurado para desplegarse fácilmente en **Vercel** (la opción recomendada gratuita).
 
-**Despliegue rápido en 10 minutos:**
+### 🚀 Pasos Rápidos
 
-1. **Guía Rápida**: Ver `RAILWAY_PASOS_RAPIDOS.md` - Pasos visuales con tiempos estimados
-2. **Guía Completa**: Ver `DESPLIEGUE_RAILWAY.md` - Documentación detallada
+1. **Subir a GitHub**: Asegúrate de que tu código esté en GitHub.
+2. **Crear Proyecto en Vercel**: Importa tu repositorio desde [vercel.com](https://vercel.com).
+3. **Agregar Base de Datos (OBLIGATORIO)**:
+   - SQLite no funciona en Vercel (se borra).
+   - Usa la pestaña "Storage" en Vercel para crear una base de datos Postgres gratuita (Neon).
+   - O conecta cualquier Postgres externo.
+4. **Variables de Entorno**:
+   - `SECRET_KEY`: Tu clave secreta.
+   - `DEBUG`: `False`
+   - `ALLOWED_HOSTS`: `.vercel.app`
+   
+**Ver guía detallada**: `DESPLIEGUE_VERCEL.md`
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/Deivyg4/bodega_belen_DJ)
-
-### ☁️ Otras Plataformas
-
-- **Vercel**: Ver `DESPLIEGUE_VERCEL.md`
-- **Heroku**: Compatible con Procfile incluido
-- **Render**: Compatible con configuración actual
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FDeivyg4%2Fbodega_belen_DJ)
 
 ## 📁 Estructura del Proyecto
 
