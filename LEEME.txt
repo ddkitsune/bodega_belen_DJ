@@ -75,6 +75,35 @@ Recomendación: Haz esto al menos 1 vez por semana
 3. Si algo falta, usa RESTAURAR_BACKUP.bat
 
 ───────────────────────────────────────────────────────────────────
+📊 CASO 6: Migrar Solo Productos (Instalación Limpia)
+───────────────────────────────────────────────────────────────────
+
+Si quieres empezar de cero pero mantener tus productos:
+
+En el Sistema Antiguo:
+1. Abre el programa antiguo
+2. Ve a Inventario → Productos
+3. Click en "Exportar"
+4. Guarda el archivo Excel
+5. Cierra el programa
+
+En el Sistema Nuevo:
+1. Instala la nueva versión
+2. Abre BodegaBelen.exe
+3. Ve a Inventario → Productos
+4. Click en "Importar"
+5. Selecciona el archivo Excel que guardaste
+
+⚠️ NOTA: Esto solo migra productos. Perderás:
+   - Historial de ventas
+   - Clientes
+   - Configuración de créditos
+
+💡 Para migrar TODO, usa el CASO 2 (copiar db.sqlite3)
+
+📖 Más info: Ver archivo METODOS_MIGRACION.md
+
+───────────────────────────────────────────────────────────────────
 
 ⚠️ REGLAS DE ORO (MUY IMPORTANTE)
 
