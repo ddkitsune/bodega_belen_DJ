@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+
+{% block title %}Reportes - Bodega de Belén{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h1 class="mb-2"><i class="bi bi-graph-up"></i> Reportes de Ventas</h1>
+    <p class="text-muted">Estadísticas y análisis de ventas</p>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros de Período</h5>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="fecha_desde" class="form-label">Fecha Desde</label>
+                <input type="date" name="fecha_desde" id="fecha_desde" class="form-control"
+                    value="{{ fecha_desde|date:'Y-m-d' }}">
+            </div>
+            <div class="col-md-4">
+                <label for="fecha_hasta" class="form-label">Fecha Hasta</label>
+                <input type="date" name="fecha_hasta" id="fecha_hasta" class="form-control"
+                    value="{{ fecha_hasta|date:'Y-m-d' }}">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Generar Reporte
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Resumen de Ventas -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">Total Ventas USD</h6>
+                        <h2 class="mb-0">${{ total_ventas_usd|floatformat:2 }}</h2>
+                    </div>
+                    <div>
+                        <i class="bi bi-cash-coin fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">Total Ventas Bs</h6>
+                        <h2 class="mb-0">Bs {{ total_ventas_bs|floatformat:2 }}</h2>
+                    </div>
+                    <div>
+                        <i class="bi bi-currency-exchange fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">Total Facturas</h6>
+                        <h2 class="mb-0">{{ facturas.count }}</h2>
+                    </div>
+                    <div>
+                        <i class="bi bi-receipt fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detalle de Facturas -->
+<div class="card">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0"><i class="bi bi-list-ul"></i> Detalle de Facturas del Período</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Número</th>
+                        <th>Cliente</th>
+                        <th>Tipo</th>
+                        <th>Total USD</th>
+                        <th>Total Bs</th>
+                        <th>Estado</th>
+                        <th>Vendedor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for factura in facturas %}
+                    <tr>
+                        <td>{{ factura.fecha|date:"d/m/Y" }}</td>
+                        <td><strong>{{ factura.numero }}</strong></td>
+                        <td>{{ factura.cliente.nombre_completo }}</td>
+                        <td>
+                            {% if factura.tipo_venta == 'CONTADO' %}
+                            <span class="badge bg-success">Contado</span>
+                            {% else %}
+                            <span class="badge bg-warning">Crédito</span>
+                            {% endif %}
+                        </td>
+                        <td>${{ factura.total_usd|floatformat:2 }}</td>
+                        <td>Bs {{ factura.total_bs|floatformat:2 }}</td>
+                        <td>
+                            {% if factura.estado == 'PAGADA' %}
+                            <span class="badge bg-success">Pagada</span>
+                            {% elif factura.estado == 'PARCIAL' %}
+                            <span class="badge bg-warning">Parcial</span>
+                            {% elif factura.estado == 'PENDIENTE' %}
+                            <span class="badge bg-danger">Pendiente</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Anulada</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ factura.vendedor.username }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <i class="bi bi-inbox fs-1 text-muted"></i>
+                            <p class="text-muted">No hay facturas en este período</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-light">
+                    <tr>
+                        <th colspan="4" class="text-end">TOTALES:</th>
+                        <th>${{ total_ventas_usd|floatformat:2 }}</th>
+                        <th>Bs {{ total_ventas_bs|floatformat:2 }}</th>
+                        <th colspan="2"></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Estadísticas Adicionales -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Por Tipo de Venta</h5>
+            </div>
+            <div class="card-body">
+                {% with contado=facturas|dictsort:"tipo_venta"|slice:":"|length credito=facturas|length %}
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h3 class="text-success">{{ facturas|length }}</h3>
+                        <small class="text-muted">Ventas de Contado</small>
+                    </div>
+                    <div class="col-6">
+                        <h3 class="text-warning">0</h3>
+                        <small class="text-muted">Ventas a Crédito</small>
+                    </div>
+                </div>
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-calendar-range"></i> Información del Período</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Fecha Inicio:</strong> {{ fecha_desde|date:"d/m/Y" }}</p>
+                <p><strong>Fecha Fin:</strong> {{ fecha_hasta|date:"d/m/Y" }}</p>
+                <p class="mb-0"><strong>Días en el período:</strong>
+                    {{ fecha_hasta|timeuntil:fecha_desde }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Acciones -->
+<div class="card mt-4 bg-light">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h6 class="mb-1">Exportar Reporte</h6>
+                <small class="text-muted">Descarga este reporte en diferentes formatos</small>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary" disabled>
+                    <i class="bi bi-file-earmark-pdf"></i> PDF
+                    <small>(Próximamente)</small>
+                </button>
+                <button class="btn btn-outline-success" disabled>
+                    <i class="bi bi-file-earmark-excel"></i> Excel
+                    <small>(Próximamente)</small>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

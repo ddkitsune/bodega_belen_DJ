@@ -1,0 +1,475 @@
+{% extends 'base.html' %}
+
+{% block title %}Nueva Venta - Bodega de Belén{% endblock %}
+
+{% block extra_css %}
+<style>
+    .producto-item {
+        margin-bottom: 1rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h1 class="mb-2"><i class="bi bi-plus-circle"></i> Nueva Venta</h1>
+    <p class="text-muted">Crear una nueva factura</p>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" id="facturaForm">
+            {% csrf_token %}
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <label for="cliente" class="form-label">Cliente *</label>
+                    <select name="cliente" id="cliente" class="form-select" required>
+                        <option value="">Seleccione un cliente...</option>
+                        {% for cliente in clientes %}
+                        <option value="{{ cliente.id }}" data-credito="{{ cliente.tiene_credito }}"
+                            data-limite="{{ cliente.limite_credito_usd }}" data-deuda="{{ cliente.deuda_total_usd }}">
+                            {{ cliente.tipo_documento }}-{{ cliente.numero_documento }} - {{ cliente.nombre_completo }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="tipo_venta" class="form-label">Tipo de Venta *</label>
+                    <select name="tipo_venta" id="tipo_venta" class="form-select" required>
+                        <option value="CONTADO">Contado</option>
+                        <option value="CREDITO">Crédito</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Tasa BCV Actual</label>
+                    <div class="form-control bg-light">1 USD = {{ tasa_actual|floatformat:2 }} Bs</div>
+                </div>
+            </div>
+
+            <div id="creditoInfo" class="alert alert-info" style="display: none;">
+                <strong>Información de Crédito:</strong>
+                <div id="creditoDetalle"></div>
+            </div>
+
+            <hr>
+
+            <h5 class="mb-3">Productos</h5>
+
+            <div id="productos-container">
+                <div class="producto-item">
+                    <div class="row align-items-end">
+                        <div class="col-md-8">
+                            <label class="form-label">Producto</label>
+                            <input type="text" class="form-control mb-1 producto-search" placeholder="🔍 Buscar producto..." autocomplete="off">
+                            <select name="producto_id[]" class="form-select producto-select" required>
+                                <option value="">Seleccione un producto...</option>
+                                {% for producto in productos %}
+                                <option value="{{ producto.id }}" data-precio="{{ producto.precio_usd }}"
+                                    data-stock="{{ producto.cantidad }}">
+                                    {{ producto.codigo }} - {{ producto.nombre }} (Stock: {{ producto.cantidad }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Cantidad</label>
+                            <input type="number" name="cantidad[]" class="form-control cantidad-input" min="1" value="1"
+                                required>
+                        </div>
+                        <!-- Campos ocultos para precio -->
+                        <input type="hidden" name="precio[]" class="precio-input">
+                        <input type="hidden" class="subtotal-display">
+                        <div class="col-md-1">
+                            <button type="button" class="btn btn-danger btn-sm w-100 remove-producto" disabled>
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-secondary mb-3" id="addProducto">
+                <i class="bi bi-plus"></i> Agregar Producto
+            </button>
+
+            <hr>
+
+            <div class="row">
+                <div class="col-md-8"></div>
+                <div class="col-md-4">
+                    <div class="mb-2">
+                        <label for="descuento_usd" class="form-label">Descuento USD</label>
+                        <input type="number" name="descuento_usd" id="descuento_usd" class="form-control" step="0.01"
+                            min="0" value="0.00">
+                    </div>
+
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-2">
+                                <strong>Subtotal USD:</strong>
+                                <span id="subtotal-usd">$0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <strong>Subtotal Bs:</strong>
+                                <span id="subtotal-bs">Bs 0.00</span>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between mb-2">
+                                <strong class="fs-5">Total USD:</strong>
+                                <strong class="fs-5" id="total-usd">$0.00</strong>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <strong class="fs-5">Total Bs:</strong>
+                                <strong class="fs-5" id="total-bs">Bs 0.00</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección de Pago (solo para CONTADO) -->
+            <div id="seccion-pago" style="display: none;">
+                <hr>
+                <h5 class="mb-3">Información de Pago</h5>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="metodo_pago" class="form-label">Método de Pago *</label>
+                            <select name="metodo_pago" id="metodo_pago" class="form-select">
+                                <option value="EFECTIVO_USD">Efectivo USD</option>
+                                <option value="EFECTIVO_BS">Efectivo Bs</option>
+                                <option value="TRANSFERENCIA">Transferencia</option>
+                                <option value="PAGO_MOVIL">Pago Móvil</option>
+                                <option value="PUNTO_VENTA">Punto de Venta</option>
+                                <option value="MIXTO">Mixto</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="referencia" class="form-label">Referencia</label>
+                            <input type="text" name="referencia" id="referencia" class="form-control"
+                                placeholder="Número de referencia (opcional)">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="monto_usd" class="form-label">Monto USD</label>
+                            <input type="number" name="monto_usd" id="monto_usd" class="form-control" step="0.01"
+                                min="0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="monto_bs" class="form-label">Monto Bs</label>
+                            <input type="number" name="monto_bs" id="monto_bs" class="form-control" step="0.01" min="0"
+                                value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">Total Pagado</label>
+                            <input type="text" id="total-pagado" class="form-control bg-light" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="alert alert-info">
+                            <strong>Vuelto USD:</strong> <span id="vuelto-usd">$0.00</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="alert alert-info">
+                            <strong>Vuelto Bs:</strong> <span id="vuelto-bs">Bs 0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> Crear Factura
+                </button>
+                <a href="{% url 'ventas:factura_list' %}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const tasaBcv = parseFloat("{{ tasa_actual }}".replace(',', '.'));
+
+    // Guardar opciones originales para búsquedas
+    let masterOptions = [];
+    document.addEventListener('DOMContentLoaded', () => {
+        const firstSelect = document.querySelector('.producto-select');
+        if (firstSelect) {
+            masterOptions = Array.from(firstSelect.options).map(opt => opt.cloneNode(true));
+        }
+    });
+
+    // Agregar producto
+    document.getElementById('addProducto').addEventListener('click', function () {
+        const container = document.getElementById('productos-container');
+        const firstItem = container.querySelector('.producto-item');
+        const newItem = firstItem.cloneNode(true);
+
+        // Restaurar todas las opciones en el nuevo select (por si el original estaba filtrado)
+        const newSelect = newItem.querySelector('.producto-select');
+        if (newSelect && masterOptions.length > 0) {
+            newSelect.innerHTML = '';
+            masterOptions.forEach(opt => newSelect.appendChild(opt.cloneNode(true)));
+        }
+
+        // Limpiar valores
+        newItem.querySelectorAll('input, select').forEach(input => {
+            if (input.classList.contains('producto-search')) {
+                input.value = '';
+            } else if (input.type === 'number') {
+                input.value = input.name.includes('cantidad') ? '1' : '';
+            } else if (input.tagName === 'SELECT') {
+                input.value = '';
+            } else {
+                input.value = '';
+            }
+        });
+
+        newItem.querySelector('.remove-producto').disabled = false;
+        container.appendChild(newItem);
+        attachEventListeners(newItem);
+    });
+
+    // Eliminar producto
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('.remove-producto')) {
+            const item = e.target.closest('.producto-item');
+            if (document.querySelectorAll('.producto-item').length > 1) {
+                item.remove();
+                calcularTotales();
+            }
+        }
+    });
+
+    // Cuando cambia el producto, actualizar precio automáticamente
+    function attachEventListeners(item) {
+        const productoSelect = item.querySelector('.producto-select');
+        const cantidadInput = item.querySelector('.cantidad-input');
+        const precioInput = item.querySelector('.precio-input');
+        const searchInput = item.querySelector('.producto-search');
+
+        // Evento de búsqueda
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const term = this.value.toLowerCase();
+                const currentVal = productoSelect.value;
+                
+                productoSelect.innerHTML = '';
+                
+                masterOptions.forEach(opt => {
+                    if (opt.text.toLowerCase().includes(term) || opt.value === "") {
+                        productoSelect.appendChild(opt.cloneNode(true));
+                    }
+                });
+                
+                // Intentar mantener selección si aún existe en los resultados
+                productoSelect.value = currentVal;
+                // Si el valor seleccionado ya no está visible, resetear a vacío
+                if (productoSelect.selectedIndex === -1) {
+                    productoSelect.value = "";
+                }
+            });
+        }
+
+        productoSelect.addEventListener('change', function () {
+            const option = this.options[this.selectedIndex];
+            const precio = option.dataset.precio || 0;
+            const stock = option.dataset.stock || 0;
+
+            // Establecer precio automáticamente (readonly)
+            precioInput.value = parseFloat(precio).toFixed(2);
+
+            // Validar stock
+            cantidadInput.max = stock;
+            if (parseInt(cantidadInput.value) > parseInt(stock)) {
+                cantidadInput.value = stock;
+                alert('Cantidad ajustada al stock disponible: ' + stock);
+            }
+
+            calcularSubtotal(item);
+        });
+
+        cantidadInput.addEventListener('input', () => calcularSubtotal(item));
+    }
+
+    function calcularSubtotal(item) {
+        const cantidad = parseFloat(item.querySelector('.cantidad-input').value) || 0;
+        const precio = parseFloat(item.querySelector('.precio-input').value) || 0;
+        const subtotal = cantidad * precio;
+        item.querySelector('.subtotal-display').value = '$' + subtotal.toFixed(2);
+        calcularTotales();
+    }
+
+    function calcularTotales() {
+        let subtotalUsd = 0;
+        document.querySelectorAll('.producto-item').forEach(item => {
+            const cantidad = parseFloat(item.querySelector('.cantidad-input').value) || 0;
+            const precio = parseFloat(item.querySelector('.precio-input').value) || 0;
+            subtotalUsd += cantidad * precio;
+        });
+
+        const descuento = parseFloat(document.getElementById('descuento_usd').value) || 0;
+        const totalUsd = subtotalUsd - descuento;
+        const subtotalBs = subtotalUsd * tasaBcv;
+        const totalBs = totalUsd * tasaBcv;
+
+        document.getElementById('subtotal-usd').textContent = '$' + subtotalUsd.toFixed(2);
+        document.getElementById('subtotal-bs').textContent = 'Bs ' + subtotalBs.toFixed(2);
+        document.getElementById('total-usd').textContent = '$' + totalUsd.toFixed(2);
+        document.getElementById('total-bs').textContent = 'Bs ' + totalBs.toFixed(2);
+    }
+
+    // Cliente crédito
+    document.getElementById('cliente').addEventListener('change', function () {
+        const option = this.options[this.selectedIndex];
+        const tieneCredito = option.dataset.credito === 'True';
+        const limite = parseFloat(option.dataset.limite) || 0;
+        const deuda = parseFloat(option.dataset.deuda) || 0;
+        const disponible = limite - deuda;
+
+        const creditoInfo = document.getElementById('creditoInfo');
+        const creditoDetalle = document.getElementById('creditoDetalle');
+
+        if (tieneCredito) {
+            creditoDetalle.innerHTML = `
+            Límite: $${limite.toFixed(2)} | 
+            Deuda actual: $${deuda.toFixed(2)} | 
+            Disponible: $${disponible.toFixed(2)}
+        `;
+            creditoInfo.style.display = 'block';
+        } else {
+            creditoInfo.style.display = 'none';
+        }
+    });
+
+    // Tipo de venta - Mostrar/ocultar sección de pago
+    document.getElementById('tipo_venta').addEventListener('change', function () {
+        const seccionPago = document.getElementById('seccion-pago');
+
+        if (this.value === 'CONTADO') {
+            seccionPago.style.display = 'block';
+        } else if (this.value === 'CREDITO') {
+            seccionPago.style.display = 'none';
+
+            const clienteSelect = document.getElementById('cliente');
+            const option = clienteSelect.options[clienteSelect.selectedIndex];
+            const tieneCredito = option.dataset.credito === 'True';
+
+            if (!tieneCredito && clienteSelect.value) {
+                alert('El cliente seleccionado no tiene crédito habilitado');
+                this.value = 'CONTADO';
+                seccionPago.style.display = 'block';
+            }
+        }
+    });
+
+    // Calcular vueltos
+    function calcularVueltos() {
+        const montoUsd = parseFloat(document.getElementById('monto_usd').value) || 0;
+        const montoBs = parseFloat(document.getElementById('monto_bs').value) || 0;
+
+        // Obtener totales de la factura
+        const totalUsdText = document.getElementById('total-usd').textContent.replace('$', '');
+        const totalBsText = document.getElementById('total-bs').textContent.replace('Bs ', '');
+        const totalUsd = parseFloat(totalUsdText) || 0;
+        const totalBs = parseFloat(totalBsText) || 0;
+
+        // Calcular total pagado en USD (convertir Bs a USD)
+        const totalPagadoUsd = montoUsd + (montoBs / tasaBcv);
+
+        // Mostrar total pagado
+        document.getElementById('total-pagado').value = '$' + totalPagadoUsd.toFixed(2);
+
+        // Calcular vueltos
+        const vueltoUsd = totalPagadoUsd - totalUsd;
+        const vueltoBs = vueltoUsd * tasaBcv;
+
+        document.getElementById('vuelto-usd').textContent = '$' + (vueltoUsd > 0 ? vueltoUsd.toFixed(2) : '0.00');
+        document.getElementById('vuelto-bs').textContent = 'Bs ' + (vueltoBs > 0 ? vueltoBs.toFixed(2) : '0.00');
+    }
+
+    // Eventos para calcular vueltos
+    document.getElementById('monto_usd').addEventListener('input', calcularVueltos);
+    document.getElementById('monto_bs').addEventListener('input', calcularVueltos);
+
+    // Validar formulario antes de enviar
+    document.getElementById('facturaForm').addEventListener('submit', function (e) {
+        // Validar que haya al menos un producto
+        const productos = document.querySelectorAll('.producto-select');
+        let tieneProductos = false;
+
+        productos.forEach(select => {
+            if (select.value) {
+                tieneProductos = true;
+            }
+        });
+
+        if (!tieneProductos) {
+            e.preventDefault();
+            alert('Debe agregar al menos un producto a la factura');
+            return false;
+        }
+
+        const tipoVenta = document.getElementById('tipo_venta').value;
+
+        // Si es CONTADO, validar que se haya ingresado información de pago
+        if (tipoVenta === 'CONTADO') {
+            const montoUsd = parseFloat(document.getElementById('monto_usd').value) || 0;
+            const montoBs = parseFloat(document.getElementById('monto_bs').value) || 0;
+
+            if (montoUsd === 0 && montoBs === 0) {
+                e.preventDefault();
+                alert('Para ventas de CONTADO debe ingresar el monto del pago');
+                return false;
+            }
+
+            // Validar que el pago sea suficiente
+            const totalUsdText = document.getElementById('total-usd').textContent.replace('$', '');
+            const totalUsd = parseFloat(totalUsdText) || 0;
+            const totalPagadoUsd = montoUsd + (montoBs / tasaBcv);
+
+            if (totalPagadoUsd < totalUsd) {
+                const confirmar = confirm(`El monto pagado ($${totalPagadoUsd.toFixed(2)}) es menor al total ($${totalUsd.toFixed(2)}). ¿Desea continuar de todas formas?`);
+                if (!confirmar) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        }
+    });
+
+    // Inicializar
+    document.getElementById('descuento_usd').addEventListener('input', calcularTotales);
+    attachEventListeners(document.querySelector('.producto-item'));
+
+    // Mostrar formulario de pago si tipo_venta es CONTADO al cargar
+    if (document.getElementById('tipo_venta').value === 'CONTADO') {
+        document.getElementById('seccion-pago').style.display = 'block';
+    }
+</script>
+{% endblock %}
