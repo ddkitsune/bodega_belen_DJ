@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Tasas de Cambio - Bodega de Belén{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="mb-2"><i class="bi bi-currency-exchange"></i> Tasas de Cambio</h1>
+            <p class="text-muted">Historial de tasas de cambio USD/Bs</p>
+        </div>
+        <div>
+            <a href="{% url 'ventas:actualizar_tasa_bcv' %}" class="btn btn-primary">
+                <i class="bi bi-arrow-clockwise"></i> Actualizar desde BCV
+            </a>
+            <a href="{% url 'ventas:tasa_cambio_create' %}" class="btn btn-secondary">
+                <i class="bi bi-plus-circle"></i> Crear Manualmente
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Tasa (Bs por USD)</th>
+                        <th>Fuente</th>
+                        <th>Registrada</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tasa in tasas %}
+                    <tr>
+                        <td><strong>{{ tasa.fecha|date:"d/m/Y" }}</strong></td>
+                        <td class="fs-5">Bs {{ tasa.tasa|floatformat:2 }}</td>
+                        <td>
+                            {% if 'BCV' in tasa.fuente %}
+                            <span class="badge bg-success">{{ tasa.fuente }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ tasa.fuente }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ tasa.created_at|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            {% if 'Manual' in tasa.fuente %}
+                            <form method="post" action="{% url 'ventas:tasa_cambio_delete' tasa.pk %}"
+                                style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                    onclick="return confirm('¿Está seguro de eliminar esta tasa de cambio?')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4">
+                            <i class="bi bi-inbox fs-1 text-muted"></i>
+                            <p class="text-muted">No hay tasas registradas</p>
+                            <a href="{% url 'ventas:actualizar_tasa_bcv' %}" class="btn btn-primary">
+                                Actualizar desde BCV
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

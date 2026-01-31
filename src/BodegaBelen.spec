@@ -1,0 +1,38 @@
+# -*- mode: python ; coding: utf-8 -*-
+
+
+a = Analysis(
+    ['run_app.py'],
+    pathex=[],
+    binaries=[],
+    datas=[('templates', 'templates'), ('static', 'static')],
+    hiddenimports=['django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes', 'django.contrib.sessions', 'django.contrib.messages', 'django.contrib.staticfiles', 'bodega_belen.middleware', 'inventario', 'ventas', 'clientes', 'import_export', 'django.templatetags.static', 'django.template.defaulttags', 'django.template.loader_tags'],
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=[],
+    noarchive=False,
+    optimize=0,
+)
+pyz = PYZ(a.pure)
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.datas,
+    [],
+    name='BodegaBelen',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    runtime_tmpdir=None,
+    console=True,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+)
