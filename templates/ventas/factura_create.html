@@ -1,0 +1,501 @@
+{% extends 'base.html' %}
+
+{% block title %}Nueva Venta - Bodega de Belén{% endblock %}
+
+{% block extra_css %}
+<style>
+    .producto-item {
+        margin-bottom: 1rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h1 class="mb-2"><i class="bi bi-plus-circle"></i> Nueva Venta</h1>
+    <p class="text-muted">Crear una nueva factura</p>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" id="facturaForm">
+            {% csrf_token %}
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <label for="cliente" class="form-label">Cliente (Opcional)</label>
+                    <select name="cliente" id="cliente" class="form-select">
+                        <option value="">Seleccione un cliente...</option>
+                        {% for cliente in clientes %}
+                        <option value="{{ cliente.id }}" data-credito="{{ cliente.tiene_credito }}"
+                            data-limite="{{ cliente.limite_credito_usd }}" data-deuda="{{ cliente.deuda_total_usd }}">
+                            {{ cliente.tipo_documento }}-{{ cliente.numero_documento }} - {{ cliente.nombre_completo }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="tipo_venta" class="form-label">Tipo de Venta *</label>
+                    <select name="tipo_venta" id="tipo_venta" class="form-select" required>
+                        <option value="CONTADO">Contado</option>
+                        <option value="CREDITO">Crédito</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Tasa BCV Actual</label>
+                    <div class="form-control bg-light">1 USD = {{ tasa_actual|floatformat:2 }} Bs</div>
+                </div>
+            </div>
+
+            <div id="creditoInfo" class="alert alert-info" style="display: none;">
+                <strong>Información de Crédito:</strong>
+                <div id="creditoDetalle"></div>
+            </div>
+
+            <hr>
+
+            <h5 class="mb-3">Productos</h5>
+
+            <div id="productos-container">
+                <div class="producto-item">
+                    <div class="row align-items-end">
+                        <div class="col-md-8">
+                            <label class="form-label">Producto</label>
+                            <select name="producto_id[]" class="form-select producto-select" required>
+                                <option value="">Seleccione un producto...</option>
+                                {% for producto in productos %}
+                                <option value="{{ producto.id }}" data-precio="{{ producto.precio_usd }}"
+                                    data-stock="{{ producto.cantidad }}" data-es-peso="{{ producto.es_por_peso }}">
+                                    {{ producto.codigo }} - {{ producto.nombre }} (Stock: {{ producto.cantidad|floatformat:3 }} {% if producto.es_por_peso %}Kg{% else %}Und{% endif %})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Cantidad <span
+                                    class="unidad-medida text-muted small"></span></label>
+                            <input type="number" name="cantidad[]" class="form-control cantidad-input" min="0.001"
+                                value="1" step="1" required>
+                        </div>
+                        <!-- Campos ocultos para precio -->
+                        <input type="hidden" name="precio[]" class="precio-input">
+                        <input type="hidden" class="subtotal-display">
+                        <div class="col-md-1">
+                            <button type="button" class="btn btn-danger btn-sm w-100 remove-producto" disabled>
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-secondary mb-3" id="addProducto">
+                <i class="bi bi-plus"></i> Agregar Producto
+            </button>
+
+            <hr>
+
+            <div class="row">
+                <div class="col-md-8"></div>
+                <div class="col-md-4">
+                    <div class="mb-2">
+                        <label for="descuento_usd" class="form-label">Descuento USD</label>
+                        <input type="number" name="descuento_usd" id="descuento_usd" class="form-control" step="0.01"
+                            min="0" value="0.00">
+                    </div>
+
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-2">
+                                <strong>Subtotal USD:</strong>
+                                <span id="subtotal-usd">$0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <strong>Subtotal Bs:</strong>
+                                <span id="subtotal-bs">Bs 0.00</span>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between mb-2">
+                                <strong class="fs-5">Total USD:</strong>
+                                <strong class="fs-5" id="total-usd">$0.00</strong>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <strong class="fs-5">Total Bs:</strong>
+                                <strong class="fs-5" id="total-bs">Bs 0.00</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección de Pago (solo para CONTADO) -->
+            <div id="seccion-pago" style="display: none;">
+                <hr>
+                <h5 class="mb-3">Información de Pago</h5>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="metodo_pago" class="form-label">Método de Pago *</label>
+                            <select name="metodo_pago" id="metodo_pago" class="form-select">
+                                <option value="EFECTIVO_USD">Efectivo USD</option>
+                                <option value="EFECTIVO_BS">Efectivo Bs</option>
+                                <option value="TRANSFERENCIA">Transferencia</option>
+                                <option value="PAGO_MOVIL">Pago Móvil</option>
+                                <option value="PUNTO_VENTA">Punto de Venta</option>
+                                <option value="MIXTO">Mixto</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="referencia" class="form-label">Referencia</label>
+                            <input type="text" name="referencia" id="referencia" class="form-control"
+                                placeholder="Número de referencia (opcional)">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="monto_usd" class="form-label">Monto USD</label>
+                            <input type="number" name="monto_usd" id="monto_usd" class="form-control" step="0.01"
+                                min="0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="monto_bs" class="form-label">Monto Bs</label>
+                            <input type="number" name="monto_bs" id="monto_bs" class="form-control" step="0.01" min="0"
+                                value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">Total Pagado</label>
+                            <input type="text" id="total-pagado" class="form-control bg-light" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="alert alert-info">
+                            <strong>Vuelto USD:</strong> <span id="vuelto-usd">$0.00</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="alert alert-info">
+                            <strong>Vuelto Bs:</strong> <span id="vuelto-bs">Bs 0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> Crear Factura
+                </button>
+                <a href="{% url 'ventas:factura_list' %}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const tasaBcv = parseFloat("{{ tasa_actual }}".replace(',', '.'));
+
+    $(document).ready(function () {
+        // Inicializar Select2 en los selects existentes
+        $('.producto-select').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Buscar producto...',
+            allowClear: true
+        });
+
+        // Inicializar select de cliente
+        $('#cliente').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Seleccione un cliente...',
+            allowClear: true
+        });
+
+        // Agregar producto
+        $('#addProducto').click(function () {
+            // Clonar el primer item (plantilla) pero limpiándolo primero si tiene select2 activado
+            // Estrategia: Clonar el contenedor padre, pero como el primero ya tiene select2, 
+            // es mejor tener una plantilla oculta o limpiar el clon.
+
+            const container = $('#productos-container');
+            // Usamos el primer item como base
+            const template = container.find('.producto-item').first();
+
+            // Clonamos
+            const newItem = template.clone();
+
+            // Limpiamos los rastros de Select2 del clon (clases, spans extra, atributos)
+            newItem.find('.select2-container').remove(); // Eliminar el span que dibuja select2
+            newItem.find('select')
+                .removeClass('select2-hidden-accessible') // Quitar clase de select2
+                .removeAttr('data-select2-id') // Quitar ID interno select2
+                .removeAttr('aria-hidden')
+                .removeAttr('tabindex')
+                .val('') // Resetear valor
+                .css('display', 'block'); // Asegurar que sea visible (select2 lo oculta)
+
+            // Limpiar valores de inputs
+            newItem.find('input').each(function () {
+                if (this.type === 'number') {
+                    if ($(this).hasClass('cantidad-input')) {
+                        $(this).val('1');
+                        $(this).attr('step', '1');
+                    } else {
+                        $(this).val('');
+                    }
+                } else if (!$(this).hasClass('subtotal-display')) {
+                    $(this).val('');
+                }
+            });
+
+            // Texto unidad reset
+            newItem.find('.unidad-medida').text('');
+
+            // Habilitar eliminar
+            newItem.find('.remove-producto').prop('disabled', false);
+
+            // Añadir al DOM
+            container.append(newItem);
+
+            // Inicializar Select2 en el nuevo elemento
+            newItem.find('.producto-select').select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: 'Buscar producto...',
+                allowClear: true
+            });
+        });
+
+        // Eliminar producto
+        $(document).on('click', '.remove-producto', function () {
+            if ($('.producto-item').length > 1) {
+                $(this).closest('.producto-item').remove();
+                calcularTotales();
+            }
+        });
+
+        // Cambio de producto
+        $(document).on('change', '.producto-select', function () {
+            const item = $(this).closest('.producto-item');
+            const option = $(this).find(':selected');
+
+            if (!option.length || !option.val()) return;
+
+            const precio = parseFloat(option.data('precio')) || 0;
+            const stock = parseFloat(option.data('stock')) || 0;
+            const esPeso = option.data('es-peso') === 'True';
+
+            const precioInput = item.find('.precio-input');
+            const cantidadInput = item.find('.cantidad-input');
+            const unidadLabel = item.find('.unidad-medida');
+
+            // Establecer precio
+            precioInput.val(precio.toFixed(2));
+
+            // Configurar inputs
+            cantidadInput.attr('max', stock);
+
+            if (esPeso) {
+                cantidadInput.attr('step', '0.001');
+                unidadLabel.text('(Kg)');
+                if (cantidadInput.val() == 1 || cantidadInput.val() == 0) cantidadInput.val('1.000');
+            } else {
+                cantidadInput.attr('step', '1');
+                unidadLabel.text('(Und)');
+                if (cantidadInput.val() == 1.000 || cantidadInput.val() == 0) cantidadInput.val('1');
+            }
+
+            validarStock(cantidadInput[0], stock, esPeso);
+            calcularSubtotal(item[0]);
+        });
+
+        // Cambio de cantidad
+        $(document).on('input', '.cantidad-input', function () {
+            const item = $(this).closest('.producto-item');
+            const select = item.find('.producto-select');
+            const option = select.find(':selected');
+
+            if (!option.length) return;
+
+            const stock = parseFloat(option.data('stock')) || 0;
+            const esPeso = option.data('es-peso') === 'True';
+
+            validarStock(this, stock, esPeso);
+            calcularSubtotal(item[0]);
+        });
+
+        // Calcular vueltos events
+        $('#monto_usd, #monto_bs').on('input', function () {
+            calcularVueltos();
+        });
+
+        // Descuento event
+        $('#descuento_usd').on('input', function () {
+            calcularTotales();
+        });
+
+        // Tipo venta change
+        $('#tipo_venta').change(function () {
+            const val = $(this).val();
+            const clienteVal = $('#cliente').val();
+
+            if (val === 'CONTADO') {
+                $('#seccion-pago').slideDown();
+            } else { // CREDITO
+                $('#seccion-pago').slideUp();
+
+                if (!clienteVal) {
+                    alert('Debe seleccionar un cliente para vender a crédito');
+                    $(this).val('CONTADO').trigger('change');
+                    return;
+                }
+
+                const option = $('#cliente').find(':selected');
+                if (option.data('credito') !== 'True') {
+                    alert('El cliente seleccionado no tiene crédito habilitado');
+                    $(this).val('CONTADO').trigger('change');
+                }
+            }
+        });
+
+        // Cliente change
+        $('#cliente').change(function () {
+            if (!$(this).val() && $('#tipo_venta').val() === 'CREDITO') {
+                $('#tipo_venta').val('CONTADO').trigger('change');
+            }
+
+            const option = $(this).find(':selected');
+            const tieneCredito = option.data('credito') === 'True';
+
+            if (tieneCredito) {
+                const limite = parseFloat(option.data('limite')) || 0;
+                const deuda = parseFloat(option.data('deuda')) || 0;
+                const disponible = limite - deuda;
+
+                $('#creditoDetalle').html(`
+                    Límite: $${limite.toFixed(2)} | 
+                    Deuda actual: $${deuda.toFixed(2)} | 
+                    Disponible: $${disponible.toFixed(2)}
+                `);
+                $('#creditoInfo').show();
+            } else {
+                $('#creditoInfo').hide();
+            }
+        });
+
+        // Submit form
+        $('#facturaForm').on('submit', function (e) {
+            let tieneProductos = false;
+            $('.producto-select').each(function () {
+                if ($(this).val()) tieneProductos = true;
+            });
+
+            if (!tieneProductos) {
+                e.preventDefault();
+                alert('Debe agregar al menos un producto');
+                return false;
+            }
+
+            if ($('#tipo_venta').val() === 'CONTADO') {
+                const montoUsd = parseFloat($('#monto_usd').val()) || 0;
+                const montoBs = parseFloat($('#monto_bs').val()) || 0;
+
+                if (montoUsd === 0 && montoBs === 0) {
+                    e.preventDefault();
+                    alert('Debe ingresar el monto del pago');
+                    return false;
+                }
+
+                const totalUsd = parseFloat($('#total-usd').text().replace('$', '')) || 0;
+                const totalPagado = montoUsd + (montoBs / tasaBcv);
+
+                if (totalPagado < totalUsd - 0.01) { // Pequeña tolerancia
+                    if (!confirm(`Monto incompleto ($${totalPagado.toFixed(2)} vs $${totalUsd.toFixed(2)}). ¿Continuar?`)) {
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+            }
+        });
+
+        // Inicializar estado UI
+        if ($('#tipo_venta').val() === 'CONTADO') {
+            $('#seccion-pago').show();
+        } else {
+            $('#seccion-pago').hide();
+        }
+    });
+
+    function validarStock(input, stock, esPeso) {
+        let cantidad = parseFloat(input.value) || 0;
+        if (cantidad > stock) {
+            input.value = stock;
+            alert(`Cantidad ajustada al stock: ${stock} ${esPeso ? 'Kg' : 'Und'}`);
+        }
+    }
+
+    function calcularSubtotal(item) {
+        const cantidad = parseFloat($(item).find('.cantidad-input').val()) || 0;
+        const precio = parseFloat($(item).find('.precio-input').val()) || 0;
+        const subtotal = cantidad * precio;
+
+        $(item).find('.subtotal-display').val('$' + subtotal.toFixed(2));
+        calcularTotales();
+    }
+
+    function calcularTotales() {
+        let subtotalUsd = 0;
+        $('.producto-item').each(function () {
+            const cantidad = parseFloat($(this).find('.cantidad-input').val()) || 0;
+            const precio = parseFloat($(this).find('.precio-input').val()) || 0;
+            subtotalUsd += cantidad * precio;
+        });
+
+        const descuento = parseFloat($('#descuento_usd').val()) || 0;
+        const totalUsd = subtotalUsd - descuento;
+        const subtotalBs = subtotalUsd * tasaBcv;
+        const totalBs = totalUsd * tasaBcv;
+
+        $('#subtotal-usd').text('$' + subtotalUsd.toFixed(2));
+        $('#subtotal-bs').text('Bs ' + subtotalBs.toFixed(2));
+        $('#total-usd').text('$' + totalUsd.toFixed(2));
+        $('#total-bs').text('Bs ' + totalBs.toFixed(2));
+    }
+
+    function calcularVueltos() {
+        const montoUsd = parseFloat($('#monto_usd').val()) || 0;
+        const montoBs = parseFloat($('#monto_bs').val()) || 0;
+        const totalUsd = parseFloat($('#total-usd').text().replace('$', '')) || 0;
+
+        const totalPagadoUsd = montoUsd + (montoBs / tasaBcv);
+        $('#total-pagado').val('$' + totalPagadoUsd.toFixed(2));
+
+        const vueltoUsd = totalPagadoUsd - totalUsd;
+        const vueltoBs = vueltoUsd * tasaBcv;
+
+        $('#vuelto-usd').text('$' + (vueltoUsd > 0 ? vueltoUsd.toFixed(2) : '0.00'));
+        $('#vuelto-bs').text('Bs ' + (vueltoBs > 0 ? vueltoBs.toFixed(2) : '0.00'));
+    }
+</script>
+{% endblock %}

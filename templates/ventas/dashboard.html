@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Bodega de Belén{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h1 class="mb-2">📊 Dashboard</h1>
+    <p class="text-muted">Resumen general del sistema</p>
+</div>
+
+<!-- Tasa de Cambio Actual -->
+{% if tasa_actual %}
+<div class="alert alert-info d-flex align-items-center mb-4">
+    <i class="bi bi-currency-exchange fs-3 me-3"></i>
+    <div>
+        <strong>Tasa BCV Actual:</strong> 1 USD = {{ tasa_actual.tasa|floatformat:2 }} Bs
+        <small class="d-block text-muted">Actualizada el {{ tasa_actual.fecha }}</small>
+    </div>
+    <a href="{% url 'ventas:actualizar_tasa_bcv' %}" class="btn btn-sm btn-primary ms-auto">
+        <i class="bi bi-arrow-clockwise"></i> Actualizar
+    </a>
+</div>
+{% endif %}
+
+<!-- Estadísticas Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6 col-lg-3">
+        <div class="card stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h6 class="text-white-50 mb-2">Ventas del Mes</h6>
+                    <h3 class="mb-0">${{ total_ventas_mes_usd|floatformat:2 }}</h3>
+                    <small>Bs {{ total_ventas_mes_bs|floatformat:2 }}</small>
+                </div>
+                <i class="bi bi-cash-stack stat-icon"></i>
+            </div>
+            <div class="mt-3">
+                <small><i class="bi bi-receipt"></i> {{ num_facturas_mes }} facturas</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+        <div class="card stat-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h6 class="text-white-50 mb-2">Por Cobrar</h6>
+                    <h3 class="mb-0">${{ total_deudas_usd|floatformat:2 }}</h3>
+                    <small>Bs {{ total_deudas_bs|floatformat:2 }}</small>
+                </div>
+                <i class="bi bi-wallet2 stat-icon"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+        <div class="card stat-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h6 class="text-white-50 mb-2">Stock Bajo</h6>
+                    <h3 class="mb-0">{{ productos_stock_bajo }}</h3>
+                    <small>Productos</small>
+                </div>
+                <i class="bi bi-exclamation-triangle stat-icon"></i>
+            </div>
+            <div class="mt-3">
+                <a href="{% url 'inventario:producto_list' %}" class="text-white text-decoration-none">
+                    <small>Ver productos <i class="bi bi-arrow-right"></i></small>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+        <div class="card stat-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h6 class="text-white-50 mb-2">Acciones Rápidas</h6>
+                </div>
+                <i class="bi bi-lightning stat-icon"></i>
+            </div>
+            <div class="mt-3">
+                <a href="{% url 'ventas:factura_create' %}" class="btn btn-light btn-sm w-100 mb-2">
+                    <i class="bi bi-plus-circle"></i> Nueva Venta
+                </a>
+                <a href="{% url 'clientes:cliente_create' %}" class="btn btn-light btn-sm w-100">
+                    <i class="bi bi-person-plus"></i> Nuevo Cliente
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Últimas Facturas -->
+<div class="card">
+    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-receipt"></i> Últimas Facturas</h5>
+        <a href="{% url 'ventas:factura_list' %}" class="btn btn-sm btn-light">Ver Todas</a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Número</th>
+                        <th>Cliente</th>
+                        <th>Tipo</th>
+                        <th>Total USD</th>
+                        <th>Total Bs</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for factura in ultimas_facturas %}
+                    <tr>
+                        <td><strong>{{ factura.numero }}</strong></td>
+                        <td>{{ factura.cliente.nombre_completo }}</td>
+                        <td>
+                            {% if factura.tipo_venta == 'CONTADO' %}
+                            <span class="badge bg-success">Contado</span>
+                            {% else %}
+                            <span class="badge bg-warning">Crédito</span>
+                            {% endif %}
+                        </td>
+                        <td>${{ factura.total_usd|floatformat:2 }}</td>
+                        <td>Bs {{ factura.total_bs|floatformat:2 }}</td>
+                        <td>
+                            {% if factura.estado == 'PAGADA' %}
+                            <span class="badge bg-success">Pagada</span>
+                            {% elif factura.estado == 'PARCIAL' %}
+                            <span class="badge bg-warning">Parcial</span>
+                            {% elif factura.estado == 'PENDIENTE' %}
+                            <span class="badge bg-danger">Pendiente</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Anulada</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ factura.fecha|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            <a href="{% url 'ventas:factura_detail' factura.pk %}"
+                                class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <i class="bi bi-inbox fs-1 text-muted"></i>
+                            <p class="text-muted">No hay facturas registradas</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

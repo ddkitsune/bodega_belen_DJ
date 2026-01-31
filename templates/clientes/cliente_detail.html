@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ cliente.nombre_completo }} - Bodega de Belén{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="mb-2"><i class="bi bi-person"></i> {{ cliente.nombre_completo }}</h1>
+            <p class="text-muted">{{ cliente.tipo_documento }}-{{ cliente.numero_documento }}</p>
+        </div>
+        <div>
+            <a href="{% url 'clientes:cliente_update' cliente.pk %}" class="btn btn-warning">
+                <i class="bi bi-pencil"></i> Editar
+            </a>
+            <a href="{% url 'clientes:cliente_list' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- Información del Cliente -->
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Información del Cliente</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Documento:</strong> {{ cliente.tipo_documento }}-{{ cliente.numero_documento }}</p>
+                        <p><strong>Nombre:</strong> {{ cliente.nombre_completo }}</p>
+                        <p><strong>Teléfono:</strong> {{ cliente.telefono|default:"N/A" }}</p>
+                        <p><strong>Email:</strong> {{ cliente.email|default:"N/A" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Dirección:</strong> {{ cliente.direccion|default:"N/A" }}</p>
+                        <p><strong>Estado:</strong>
+                            {% if cliente.activo %}
+                            <span class="badge bg-success">Activo</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactivo</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historial de Facturas -->
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Historial de Compras</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Número</th>
+                                <th>Fecha</th>
+                                <th>Total USD</th>
+                                <th>Total Bs</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for factura in facturas %}
+                            <tr>
+                                <td><strong>{{ factura.numero }}</strong></td>
+                                <td>{{ factura.fecha|date:"d/m/Y" }}</td>
+                                <td>${{ factura.total_usd|floatformat:2 }}</td>
+                                <td>Bs {{ factura.total_bs|floatformat:2 }}</td>
+                                <td>
+                                    {% if factura.estado == 'PAGADA' %}
+                                    <span class="badge bg-success">Pagada</span>
+                                    {% elif factura.estado == 'PARCIAL' %}
+                                    <span class="badge bg-warning">Parcial</span>
+                                    {% elif factura.estado == 'PENDIENTE' %}
+                                    <span class="badge bg-danger">Pendiente</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Anulada</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'ventas:factura_detail' factura.pk %}"
+                                        class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-3">No hay facturas registradas</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Estado de Crédito -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Estado de Crédito</h5>
+            </div>
+            <div class="card-body">
+                {% if cliente.tiene_credito %}
+                <p><strong>Límite de Crédito:</strong><br>${{ cliente.limite_credito_usd|floatformat:2 }}</p>
+                <p><strong>Deuda Total USD:</strong><br>
+                    <span class="fs-5 {% if cliente.deuda_total_usd > 0 %}text-danger{% else %}text-success{% endif %}">
+                        ${{ cliente.deuda_total_usd|floatformat:2 }}
+                    </span>
+                </p>
+                <p><strong>Deuda Total Bs:</strong><br>
+                    <span class="fs-5 {% if cliente.deuda_total_bs > 0 %}text-danger{% else %}text-success{% endif %}">
+                        Bs {{ cliente.deuda_total_bs|floatformat:2 }}
+                    </span>
+                </p>
+                <hr>
+                <p><strong>Crédito Disponible:</strong><br>
+                    <span class="fs-4 text-success">${{ cliente.credito_disponible_usd|floatformat:2 }}</span>
+                </p>
+
+                <a href="{% url 'clientes:nota_credito_create' cliente.pk %}" class="btn btn-sm btn-warning w-100">
+                    <i class="bi bi-file-text"></i> Crear Nota de Crédito
+                </a>
+                {% else %}
+                <p class="text-muted">Este cliente no tiene crédito habilitado</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Notas de Crédito -->
+        {% if notas_credito %}
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Notas de Crédito</h5>
+            </div>
+            <div class="card-body">
+                {% for nota in notas_credito %}
+                <div class="mb-2 pb-2 border-bottom">
+                    <p class="mb-1"><strong>NC-{{ nota.id }}:</strong> ${{ nota.monto_usd|floatformat:2 }}</p>
+                    <small class="text-muted">{{ nota.concepto }}</small><br>
+                    <small class="text-muted">{{ nota.fecha|date:"d/m/Y" }}</small>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

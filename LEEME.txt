@@ -1,0 +1,188 @@
+═══════════════════════════════════════════════════════════════════
+  📖 INSTRUCCIONES RÁPIDAS - Bodega de Belén
+═══════════════════════════════════════════════════════════════════
+
+🎯 ¿QUÉ HACER SEGÚN TU CASO?
+
+───────────────────────────────────────────────────────────────────
+📦 CASO 1: Primera Instalación (Usuario Nuevo)
+───────────────────────────────────────────────────────────────────
+
+1. Descomprime todos los archivos en una carpeta
+2. Haz doble clic en: BodegaBelen.exe
+3. ¡Listo! El sistema está funcionando
+
+───────────────────────────────────────────────────────────────────
+🔄 CASO 2: Actualización (Ya tengo una versión anterior)
+───────────────────────────────────────────────────────────────────
+
+IMPORTANTE: Tus datos NO se perderán si sigues estos pasos
+
+Pasos Simples:
+
+1. Cierra el programa si está abierto
+
+2. Haz doble clic en: BACKUP_AUTOMATICO.bat
+   (Esto guarda una copia de tus datos)
+
+3. Copia el nuevo BodegaBelen.exe a tu carpeta actual
+
+4. Cuando te pregunte si quieres reemplazar, di que SÍ
+
+5. Haz doble clic en el nuevo BodegaBelen.exe
+
+6. ¡Listo! Tus datos siguen ahí
+
+───────────────────────────────────────────────────────────────────
+💾 CASO 3: Hacer Backup de Mis Datos
+───────────────────────────────────────────────────────────────────
+
+1. Cierra el programa
+
+2. Haz doble clic en: BACKUP_AUTOMATICO.bat
+
+3. Espera a que termine
+
+4. Tus datos están guardados en la carpeta "Backups"
+
+Recomendación: Haz esto al menos 1 vez por semana
+
+───────────────────────────────────────────────────────────────────
+🔙 CASO 4: Algo Salió Mal, Quiero Volver Atrás
+───────────────────────────────────────────────────────────────────
+
+1. Cierra el programa
+
+2. Haz doble clic en: RESTAURAR_BACKUP.bat
+
+3. Selecciona el backup que quieres restaurar
+
+4. Confirma que sí quieres restaurar
+
+5. ¡Listo! Tus datos volvieron a como estaban
+
+───────────────────────────────────────────────────────────────────
+🔍 CASO 5: Verificar que Mis Datos Estén Bien
+───────────────────────────────────────────────────────────────────
+
+1. Abre el programa
+
+2. Ve a cada sección:
+   - Inventario → ¿Están todos tus productos?
+   - Clientes → ¿Están todos tus clientes?
+   - Ventas → ¿Está el historial completo?
+
+3. Si algo falta, usa RESTAURAR_BACKUP.bat
+
+───────────────────────────────────────────────────────────────────
+📊 CASO 6: Migrar Solo Productos (Instalación Limpia)
+───────────────────────────────────────────────────────────────────
+
+Si quieres empezar de cero pero mantener tus productos:
+
+En el Sistema Antiguo:
+1. Abre el programa antiguo
+2. Ve a Inventario → Productos
+3. Click en "Exportar"
+4. Guarda el archivo Excel
+5. Cierra el programa
+
+En el Sistema Nuevo:
+1. Instala la nueva versión
+2. Abre BodegaBelen.exe
+3. Ve a Inventario → Productos
+4. Click en "Importar"
+5. Selecciona el archivo Excel que guardaste
+
+⚠️ NOTA: Esto solo migra productos. Perderás:
+   - Historial de ventas
+   - Clientes
+   - Configuración de créditos
+
+💡 Para migrar TODO, usa el CASO 2 (copiar db.sqlite3)
+
+📖 Más info: Ver archivo METODOS_MIGRACION.md
+
+───────────────────────────────────────────────────────────────────
+
+⚠️ REGLAS DE ORO (MUY IMPORTANTE)
+
+1. ✅ SIEMPRE haz backup antes de actualizar
+2. ✅ NUNCA borres el archivo "db.sqlite3"
+3. ✅ Guarda los backups por al menos 1 semana
+4. ✅ Cierra el programa antes de hacer cambios
+
+───────────────────────────────────────────────────────────────────
+
+📁 ¿QUÉ ES CADA ARCHIVO?
+
+BodegaBelen.exe          → El programa principal
+db.sqlite3               → TUS DATOS (¡MUY IMPORTANTE!)
+BACKUP_AUTOMATICO.bat    → Hace copias de seguridad
+ACTUALIZAR.bat           → Actualiza automáticamente
+RESTAURAR_BACKUP.bat     → Recupera datos anteriores
+Backups/                 → Carpeta con tus copias de seguridad
+
+───────────────────────────────────────────────────────────────────
+
+🆘 SI TIENES PROBLEMAS
+
+Problema: "No puedo abrir el programa"
+Solución: 
+  - Haz clic derecho en BodegaBelen.exe
+  - Selecciona "Ejecutar como administrador"
+
+Problema: "Faltan mis datos"
+Solución:
+  - NO CIERRES el programa
+  - Ejecuta RESTAURAR_BACKUP.bat
+  - Selecciona el backup más reciente
+
+Problema: "El programa está lento"
+Solución:
+  - Cierra el programa
+  - Reinicia tu computadora
+  - Abre el programa nuevamente
+
+───────────────────────────────────────────────────────────────────
+
+✅ LISTA DE VERIFICACIÓN DESPUÉS DE ACTUALIZAR
+
+Verifica que todo funcione:
+
+□ El programa abre correctamente
+□ Veo todos mis productos
+□ Veo todos mis clientes
+□ Veo el historial de ventas
+□ Puedo crear una venta nueva
+□ La tasa del dólar se actualiza
+
+Si TODOS tienen ✓, ¡todo está bien!
+
+───────────────────────────────────────────────────────────────────
+
+💡 CONSEJOS ÚTILES
+
+1. Haz backup cada semana (o más seguido si vendes mucho)
+
+2. Guarda los backups en una USB o en la nube
+
+3. Antes de actualizar, siempre haz backup
+
+4. Si tienes dudas, pregunta ANTES de hacer cambios
+
+5. Anota la fecha de tu último backup
+
+───────────────────────────────────────────────────────────────────
+
+📞 CONTACTO
+
+Si necesitas ayuda, ten a mano:
+  - Versión del programa que tienes
+  - Qué estabas haciendo cuando pasó el problema
+  - Mensaje de error (si aparece alguno)
+
+═══════════════════════════════════════════════════════════════════
+  Bodega de Belén - Sistema de Gestión
+  Versión 2.0 - Enero 2026
+═══════════════════════════════════════════════════════════════════

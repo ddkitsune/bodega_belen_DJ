@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}Registrar Pago - Factura {{ factura.numero }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h1 class="mb-2"><i class="bi bi-cash"></i> Registrar Pago</h1>
+    <p class="text-muted">Factura {{ factura.numero }} - {{ factura.cliente.nombre_completo }}</p>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Información del Pago</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="pagoForm">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="metodo" class="form-label">Método de Pago *</label>
+                        <select name="metodo" id="metodo" class="form-select" required>
+                            <option value="EFECTIVO_USD">Efectivo USD</option>
+                            <option value="EFECTIVO_BS">Efectivo Bs</option>
+                            <option value="TRANSFERENCIA">Transferencia Bancaria</option>
+                            <option value="PUNTO_VENTA">Punto de Venta</option>
+                            <option value="PAGO_MOVIL">Pago Móvil</option>
+                            <option value="ZELLE">Zelle</option>
+                            <option value="OTRO">Otro</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="monto_recibido" class="form-label">Monto Recibido (en Bs) *</label>
+                        <input type="number" name="monto_recibido" id="monto_recibido" class="form-control" step="0.01"
+                            min="0.01" required>
+                        <small class="form-text text-muted">
+                            Saldo pendiente: Bs {{ factura.saldo_pendiente_bs|floatformat:2 }}
+                            (USD ${{ factura.saldo_pendiente_usd|floatformat:2 }})
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="referencia" class="form-label">Referencia (opcional)</label>
+                        <input type="text" name="referencia" id="referencia" class="form-control"
+                            placeholder="Número de referencia bancaria">
+                    </div>
+
+                    <div class="alert alert-info">
+                        <h6>Vista Previa del Vuelto:</h6>
+                        <div id="vueltoPreview">
+                            <p>Ingrese el monto recibido para calcular el vuelto</p>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> Registrar Pago
+                        </button>
+                        <a href="{% url 'ventas:factura_detail' factura.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Resumen de la Factura</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Número:</strong> {{ factura.numero }}</p>
+                <p><strong>Cliente:</strong> {{ factura.cliente.nombre_completo }}</p>
+                <p><strong>Total USD:</strong> ${{ factura.total_usd|floatformat:2 }}</p>
+                <p><strong>Total Bs:</strong> Bs {{ factura.total_bs|floatformat:2 }}</p>
+                <hr>
+                <p><strong>Pagado USD:</strong> ${{ factura.total_pagado_usd|floatformat:2 }}</p>
+                <hr>
+                <p class="fs-5 text-danger">
+                    <strong>Saldo Pendiente USD:</strong><br>
+                    ${{ factura.saldo_pendiente_usd|floatformat:2 }}
+                </p>
+                <p class="fs-5 text-danger">
+                    <strong>Saldo Pendiente Bs:</strong><br>
+                    Bs {{ factura.saldo_pendiente_bs|floatformat:2 }}
+                </p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Tasa de Cambio</h5>
+            </div>
+            <div class="card-body">
+                <p class="fs-5 mb-0">1 USD = {{ tasa_actual|floatformat:2 }} Bs</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const tasaBcv = {{ tasa_actual }};
+    const saldoPendienteBs = {{ factura.saldo_pendiente_bs }};
+    const saldoPendienteUsd = {{ factura.saldo_pendiente_usd }};
+
+    document.getElementById('monto_recibido').addEventListener('input', function () {
+        const montoRecibido = parseFloat(this.value) || 0;
+
+        if (montoRecibido > 0) {
+            let montoAplicado = Math.min(montoRecibido, saldoPendienteBs);
+            let vuelto = montoRecibido - montoAplicado;
+            let vueltoUsd = vuelto / tasaBcv;
+            let montoAplicadoUsd = montoAplicado / tasaBcv;
+
+            let html = `
+            <p><strong>Monto Recibido:</strong> Bs ${montoRecibido.toFixed(2)}</p>
+            <p><strong>Monto a Aplicar:</strong> Bs ${montoAplicado.toFixed(2)} (USD $${montoAplicadoUsd.toFixed(2)})</p>
+            <hr>
+            <p class="fs-5 ${vuelto > 0 ? 'text-success' : ''}">
+                <strong>Vuelto:</strong><br>
+                Bs ${vuelto.toFixed(2)}<br>
+                USD $${vueltoUsd.toFixed(2)}
+            </p>
+        `;
+
+            if (montoRecibido < saldoPendienteBs) {
+                html += `<p class="text-warning"><small><i class="bi bi-info-circle"></i> Pago parcial. Quedará un saldo de Bs ${(saldoPendienteBs - montoRecibido).toFixed(2)}</small></p>`;
+            }
+
+            document.getElementById('vueltoPreview').innerHTML = html;
+        } else {
+            document.getElementById('vueltoPreview').innerHTML = '<p>Ingrese el monto recibido para calcular el vuelto</p>';
+        }
+    });
+
+    // Sugerencia rápida
+    document.getElementById('monto_recibido').addEventListener('focus', function () {
+        if (!this.value) {
+            this.value = saldoPendienteBs.toFixed(2);
+            this.dispatchEvent(new Event('input'));
+        }
+    });
+</script>
+{% endblock %}
