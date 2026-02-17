@@ -39,8 +39,7 @@
                     </div>
 
                     <div class="mb-3 form-check form-switch ps-5">
-                        <input class="form-check-input" type="checkbox" name="es_por_peso" id="es_por_peso" {% if
-                            producto and producto.es_por_peso %}checked{% endif %}>
+                        <input class="form-check-input" type="checkbox" name="es_por_peso" id="es_por_peso" {% if producto and producto.es_por_peso %}checked{% endif %}>
                         <label class="form-check-label fw-bold" for="es_por_peso">
                             <i class="bi bi-speedometer2"></i> Venta por Peso / Granel (Kg)
                         </label>
@@ -54,8 +53,7 @@
                             <select name="categoria" id="categoria" class="form-select">
                                 <option value="">Sin categoría</option>
                                 {% for cat in categorias %}
-                                <option value="{{ cat.id }}" {% if producto and producto.categoria_id==cat.id
-                                    %}selected{% endif %}>{{ cat.nombre }}</option>
+                                <option value="{{ cat.id }}" {% if producto and producto.categoria_id == cat.id %}selected{% endif %}>{{ cat.nombre }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -87,8 +85,7 @@
                     <div class="mb-3">
                         <label for="imagen" class="form-label">Imagen del Producto</label>
                         <input type="file" name="imagen" id="imagen" class="form-control" accept="image/*">
-                        {% if producto and producto.imagen %}
-                        <small class="text-muted">Imagen actual: {{ producto.imagen.name }}</small>
+                        {% if producto and producto.imagen %}<small class="text-muted">Imagen actual: {{ producto.imagen.name }}</small>
                         {% endif %}
                     </div>
 
