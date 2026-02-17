@@ -214,6 +214,7 @@ class Pago(models.Model):
         ('PUNTO_VENTA', 'Punto de Venta'),
         ('PAGO_MOVIL', 'Pago Móvil'),
         ('ZELLE', 'Zelle'),
+        ('MIXTO', 'Mixto'),
         ('OTRO', 'Otro'),
     ]
     

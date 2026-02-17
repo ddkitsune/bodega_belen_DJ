@@ -62,9 +62,10 @@
             <h5 class="mb-3">Productos</h5>
 
             <div id="productos-container">
+                <!-- La primera fila ya no es plantilla, es una fila normal -->
                 <div class="producto-item">
                     <div class="row align-items-end">
-                        <div class="col-md-8">
+                        <div class="col-md-7">
                             <label class="form-label">Producto</label>
                             <select name="producto_id[]" class="form-select producto-select" required>
                                 <option value="">Seleccione un producto...</option>
@@ -76,17 +77,24 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label">Cantidad <span
                                     class="unidad-medida text-muted small"></span></label>
-                            <input type="number" name="cantidad[]" class="form-control cantidad-input" min="0.001"
+                            <input type="number" name="cantidad[]" class="form-control cantidad-input" min="1"
                                 value="1" step="1" required>
                         </div>
-                        <!-- Campos ocultos para precio -->
+                        <div class="col-md-2">
+                            <label class="form-label">Subtotal USD</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="text" class="form-control subtotal-display" value="0.00" readonly
+                                    tabindex="-1">
+                            </div>
+                        </div>
                         <input type="hidden" name="precio[]" class="precio-input">
-                        <input type="hidden" class="subtotal-display">
                         <div class="col-md-1">
-                            <button type="button" class="btn btn-danger btn-sm w-100 remove-producto" disabled>
+                            <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-producto" disabled
+                                title="Eliminar este producto">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </div>
@@ -94,8 +102,49 @@
                 </div>
             </div>
 
-            <button type="button" class="btn btn-secondary mb-3" id="addProducto">
-                <i class="bi bi-plus"></i> Agregar Producto
+            <!-- Plantilla Oculta para nuevos productos -->
+            <template id="producto-template">
+                <div class="producto-item">
+                    <div class="row align-items-end">
+                        <div class="col-md-7">
+                            <label class="form-label">Producto</label>
+                            <select name="producto_id[]" class="form-select producto-select-new" required>
+                                <option value="">Seleccione un producto...</option>
+                                {% for producto in productos %}
+                                <option value="{{ producto.id }}" data-precio="{{ producto.precio_usd }}"
+                                    data-stock="{{ producto.cantidad }}" data-es-peso="{{ producto.es_por_peso }}">
+                                    {{ producto.codigo }} - {{ producto.nombre }} (Stock: {{ producto.cantidad|floatformat:3 }} {% if producto.es_por_peso %}Kg{% else %}Und{% endif %})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Cantidad <span
+                                    class="unidad-medida text-muted small"></span></label>
+                            <input type="number" name="cantidad[]" class="form-control cantidad-input" min="1"
+                                value="1" step="1" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Subtotal USD</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="text" class="form-control subtotal-display" value="0.00" readonly
+                                    tabindex="-1">
+                            </div>
+                        </div>
+                        <input type="hidden" name="precio[]" class="precio-input">
+                        <div class="col-md-1">
+                            <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-producto"
+                                title="Eliminar este producto">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <button type="button" class="btn btn-outline-secondary mb-3" id="addProducto">
+                <i class="bi bi-plus-lg"></i> Agregar Otro Producto
             </button>
 
             <hr>
@@ -148,6 +197,7 @@
                                 <option value="TRANSFERENCIA">Transferencia</option>
                                 <option value="PAGO_MOVIL">Pago Móvil</option>
                                 <option value="PUNTO_VENTA">Punto de Venta</option>
+                                <option value="ZELLE">Zelle</option>
                                 <option value="MIXTO">Mixto</option>
                             </select>
                         </div>
@@ -216,13 +266,18 @@
     const tasaBcv = parseFloat("{{ tasa_actual }}".replace(',', '.'));
 
     $(document).ready(function () {
-        // Inicializar Select2 en los selects existentes
-        $('.producto-select').select2({
-            theme: 'bootstrap-5',
-            width: '100%',
-            placeholder: 'Buscar producto...',
-            allowClear: true
-        });
+        // Función para inicializar Select2
+        function initSelect2(element) {
+            $(element).select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: 'Buscar producto...',
+                allowClear: true
+            });
+        }
+
+        // Inicializar Select2 en los existentes
+        initSelect2('.producto-select');
 
         // Inicializar select de cliente
         $('#cliente').select2({
@@ -234,57 +289,27 @@
 
         // Agregar producto
         $('#addProducto').click(function () {
-            // Clonar el primer item (plantilla) pero limpiándolo primero si tiene select2 activado
-            // Estrategia: Clonar el contenedor padre, pero como el primero ya tiene select2, 
-            // es mejor tener una plantilla oculta o limpiar el clon.
-
             const container = $('#productos-container');
-            // Usamos el primer item como base
-            const template = container.find('.producto-item').first();
+            const template = document.getElementById('producto-template');
 
-            // Clonamos
-            const newItem = template.clone();
+            // Clonar contenido de template
+            const clone = template.content.cloneNode(true);
+            const newItem = $(clone.querySelector('.producto-item'));
 
-            // Limpiamos los rastros de Select2 del clon (clases, spans extra, atributos)
-            newItem.find('.select2-container').remove(); // Eliminar el span que dibuja select2
-            newItem.find('select')
-                .removeClass('select2-hidden-accessible') // Quitar clase de select2
-                .removeAttr('data-select2-id') // Quitar ID interno select2
-                .removeAttr('aria-hidden')
-                .removeAttr('tabindex')
-                .val('') // Resetear valor
-                .css('display', 'block'); // Asegurar que sea visible (select2 lo oculta)
-
-            // Limpiar valores de inputs
-            newItem.find('input').each(function () {
-                if (this.type === 'number') {
-                    if ($(this).hasClass('cantidad-input')) {
-                        $(this).val('1');
-                        $(this).attr('step', '1');
-                    } else {
-                        $(this).val('');
-                    }
-                } else if (!$(this).hasClass('subtotal-display')) {
-                    $(this).val('');
-                }
-            });
-
-            // Texto unidad reset
-            newItem.find('.unidad-medida').text('');
-
-            // Habilitar eliminar
-            newItem.find('.remove-producto').prop('disabled', false);
+            // Cambiar clase temporal a la definitiva
+            const select = newItem.find('.producto-select-new');
+            select.removeClass('producto-select-new').addClass('producto-select');
 
             // Añadir al DOM
             container.append(newItem);
 
             // Inicializar Select2 en el nuevo elemento
-            newItem.find('.producto-select').select2({
-                theme: 'bootstrap-5',
-                width: '100%',
-                placeholder: 'Buscar producto...',
-                allowClear: true
-            });
+            initSelect2(select);
+
+            // Scroll suave hacia abajo
+            $('html, body').animate({
+                scrollTop: newItem.offset().top - 100
+            }, 200);
         });
 
         // Eliminar producto
@@ -318,10 +343,12 @@
 
             if (esPeso) {
                 cantidadInput.attr('step', '0.001');
+                cantidadInput.attr('min', '0.001');
                 unidadLabel.text('(Kg)');
                 if (cantidadInput.val() == 1 || cantidadInput.val() == 0) cantidadInput.val('1.000');
             } else {
                 cantidadInput.attr('step', '1');
+                cantidadInput.attr('min', '1');
                 unidadLabel.text('(Und)');
                 if (cantidadInput.val() == 1.000 || cantidadInput.val() == 0) cantidadInput.val('1');
             }

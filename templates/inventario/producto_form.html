@@ -39,12 +39,13 @@
                     </div>
 
                     <div class="mb-3 form-check form-switch ps-5">
-                        <input class="form-check-input" type="checkbox" name="es_por_peso" id="es_por_peso"
-                            {% if producto and producto.es_por_peso %}checked{% endif %}>
+                        <input class="form-check-input" type="checkbox" name="es_por_peso" id="es_por_peso" {% if
+                            producto and producto.es_por_peso %}checked{% endif %}>
                         <label class="form-check-label fw-bold" for="es_por_peso">
                             <i class="bi bi-speedometer2"></i> Venta por Peso / Granel (Kg)
                         </label>
-                        <div class="form-text">Active esta opción para productos como Queso, Verduras o Charcutería que se venden por kilogramos (permite decimales).</div>
+                        <div class="form-text">Active esta opción para productos como Queso, Verduras o Charcutería que
+                            se venden por kilogramos (permite decimales).</div>
                     </div>
 
                     <div class="row mb-3">
@@ -53,27 +54,33 @@
                             <select name="categoria" id="categoria" class="form-select">
                                 <option value="">Sin categoría</option>
                                 {% for cat in categorias %}
-                                <option value="{{ cat.id }}" {% if producto and producto.categoria_id == cat.id %}selected{% endif %}>{{ cat.nombre }}</option>
+                                <option value="{{ cat.id }}" {% if producto and producto.categoria_id==cat.id
+                                    %}selected{% endif %}>{{ cat.nombre }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-6">
                             <label for="precio_usd" class="form-label">Precio USD *</label>
                             <input type="number" name="precio_usd" id="precio_usd" class="form-control" step="0.01"
-                                min="0.01" value="{% if producto %}{{ producto.precio_usd|stringformat:'f' }}{% endif %}" required>
+                                min="0.01"
+                                value="{% if producto %}{{ producto.precio_usd|stringformat:'f' }}{% endif %}" required>
                         </div>
                     </div>
 
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="cantidad" class="form-label">Cantidad en Stock * <span id="unidad-display" class="text-muted small"></span></label>
+                            <label for="cantidad" class="form-label">Cantidad en Stock * <span id="unidad-display"
+                                    class="text-muted small"></span></label>
                             <input type="number" name="cantidad" id="cantidad" class="form-control" min="0" step="0.001"
-                                value="{% if producto %}{{ producto.cantidad|stringformat:'f' }}{% else %}0{% endif %}" required>
+                                value="{% if producto %}{{ producto.cantidad|stringformat:'f' }}{% else %}0{% endif %}"
+                                required>
                         </div>
                         <div class="col-md-6">
                             <label for="stock_minimo" class="form-label">Stock Mínimo *</label>
-                            <input type="number" name="stock_minimo" id="stock_minimo" class="form-control" min="0" step="0.001"
-                                value="{% if producto %}{{ producto.stock_minimo|stringformat:'f' }}{% else %}5{% endif %}" required>
+                            <input type="number" name="stock_minimo" id="stock_minimo" class="form-control" min="0"
+                                step="0.001"
+                                value="{% if producto %}{{ producto.stock_minimo|stringformat:'f' }}{% else %}5{% endif %}"
+                                required>
                         </div>
                     </div>
 
@@ -112,4 +119,34 @@
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+    $(document).ready(function () {
+        const switchPeso = $('#es_por_peso');
+        const inputCantidad = $('#cantidad');
+        const inputMinimo = $('#stock_minimo');
+        const displayUnidad = $('#unidad-display');
+
+        function actualizarUI() {
+            if (switchPeso.is(':checked')) {
+                displayUnidad.text('(Kg)');
+                inputCantidad.attr('step', '0.001');
+                inputMinimo.attr('step', '0.001');
+            } else {
+                displayUnidad.text('(Und)');
+                inputCantidad.attr('step', '1');
+                inputMinimo.attr('step', '1');
+
+                // Redondear valores si cambia a unidades
+                inputCantidad.val(Math.round(inputCantidad.val()));
+                inputMinimo.val(Math.round(inputMinimo.val()));
+            }
+        }
+
+        switchPeso.on('change', actualizarUI);
+        actualizarUI(); // Inicializar
+    });
+</script>
+{% endblock %}
 {% endblock %}

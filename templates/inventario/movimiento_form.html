@@ -17,11 +17,12 @@
 
                     <div class="mb-3">
                         <label for="producto" class="form-label">Producto *</label>
-                        <select name="producto" id="producto" class="form-select" required>
+                        <select name="producto" id="producto" class="form-select select2-producto" required>
                             <option value="">Seleccione un producto...</option>
                             {% for producto in productos %}
                             <option value="{{ producto.id }}" data-stock="{{ producto.cantidad }}">
-                                {{ producto.codigo }} - {{ producto.nombre }} (Stock actual: {{ producto.cantidad }})
+                                {{ producto.codigo }} - {{ producto.nombre }} (Stock actual: {{
+                                producto.cantidad|floatformat:3 }})
                             </option>
                             {% endfor %}
                         </select>
@@ -31,9 +32,9 @@
                         <label for="tipo" class="form-label">Tipo de Movimiento *</label>
                         <select name="tipo" id="tipo" class="form-select" required>
                             <option value="">Seleccione el tipo...</option>
-                            <option value="ENTRADA">➕ Entrada - Agregar stock</option>
-                            <option value="SALIDA">➖ Salida - Reducir stock</option>
-                            <option value="AJUSTE">⚙️ Ajuste - Establecer stock exacto</option>
+                            <option value="ENTRADA">➕ Entrada (Comprar/Reponer Stock)</option>
+                            <option value="SALIDA">➖ Salida (Pérdida/Dañado)</option>
+                            <option value="AJUSTE">⚙️ Ajuste (Inventario Físico)</option>
                         </select>
                     </div>
 
@@ -102,6 +103,15 @@
 </div>
 
 <script>
+    $(document).ready(function () {
+        $('.select2-producto').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Buscar producto...',
+            allowClear: true
+        });
+    });
+
     document.getElementById('producto').addEventListener('change', updatePreview);
     document.getElementById('tipo').addEventListener('change', updatePreview);
     document.getElementById('cantidad').addEventListener('input', updatePreview);
