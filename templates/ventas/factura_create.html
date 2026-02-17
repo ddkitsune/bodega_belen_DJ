@@ -264,6 +264,15 @@
 {% block extra_js %}
 <script>
     const tasaBcv = parseFloat("{{ tasa_actual }}".replace(',', '.'));
+    // Función robusta para convertir strings con comas a números
+    function parseNum(val) {
+        if (val === undefined || val === null || val === "") return 0;
+        if (typeof val === "number") return val;
+        let s = String(val).replace(",", ".").replace("$", "").trim();
+        let n = parseFloat(s);
+        return isNaN(n) ? 0 : n;
+    }
+
 
     $(document).ready(function () {
         // Función para inicializar Select2
@@ -327,8 +336,8 @@
 
             if (!option.length || !option.val()) return;
 
-            const precio = parseFloat(option.data('precio')) || 0;
-            const stock = parseFloat(option.data('stock')) || 0;
+            const precio = parseNum(option.data('precio')) || 0;
+            const stock = parseNum(option.data('stock')) || 0;
             const esPeso = option.data('es-peso') === 'True';
 
             const precioInput = item.find('.precio-input');
@@ -365,7 +374,7 @@
 
             if (!option.length) return;
 
-            const stock = parseFloat(option.data('stock')) || 0;
+            const stock = parseNum(option.data('stock')) || 0;
             const esPeso = option.data('es-peso') === 'True';
 
             validarStock(this, stock, esPeso);
@@ -445,8 +454,8 @@
             }
 
             if ($('#tipo_venta').val() === 'CONTADO') {
-                const montoUsd = parseFloat($('#monto_usd').val()) || 0;
-                const montoBs = parseFloat($('#monto_bs').val()) || 0;
+                const montoUsd = parseNum($('#monto_usd').val()) || 0;
+                const montoBs = parseNum($('#monto_bs').val()) || 0;
 
                 if (montoUsd === 0 && montoBs === 0) {
                     e.preventDefault();
@@ -454,7 +463,7 @@
                     return false;
                 }
 
-                const totalUsd = parseFloat($('#total-usd').text().replace('$', '')) || 0;
+                const totalUsd = parseNum($('#total-usd').text()) || 0;
                 const totalPagado = montoUsd + (montoBs / tasaBcv);
 
                 if (totalPagado < totalUsd - 0.01) { // Pequeña tolerancia
@@ -475,7 +484,7 @@
     });
 
     function validarStock(input, stock, esPeso) {
-        let cantidad = parseFloat(input.value) || 0;
+        let cantidad = parseNum(input.value) || 0;
         if (cantidad > stock) {
             input.value = stock;
             alert(`Cantidad ajustada al stock: ${stock} ${esPeso ? 'Kg' : 'Und'}`);
@@ -483,8 +492,8 @@
     }
 
     function calcularSubtotal(item) {
-        const cantidad = parseFloat($(item).find('.cantidad-input').val()) || 0;
-        const precio = parseFloat($(item).find('.precio-input').val()) || 0;
+        const cantidad = parseNum($(item).find('.cantidad-input').val()) || 0;
+        const precio = parseNum($(item).find('.precio-input').val()) || 0;
         const subtotal = cantidad * precio;
 
         $(item).find('.subtotal-display').val('$' + subtotal.toFixed(2));
@@ -494,12 +503,12 @@
     function calcularTotales() {
         let subtotalUsd = 0;
         $('.producto-item').each(function () {
-            const cantidad = parseFloat($(this).find('.cantidad-input').val()) || 0;
-            const precio = parseFloat($(this).find('.precio-input').val()) || 0;
+            const cantidad = parseNum($(this).find('.cantidad-input').val()) || 0;
+            const precio = parseNum($(this).find('.precio-input').val()) || 0;
             subtotalUsd += cantidad * precio;
         });
 
-        const descuento = parseFloat($('#descuento_usd').val()) || 0;
+        const descuento = parseNum($('#descuento_usd').val()) || 0;
         const totalUsd = subtotalUsd - descuento;
         const subtotalBs = subtotalUsd * tasaBcv;
         const totalBs = totalUsd * tasaBcv;
@@ -511,9 +520,9 @@
     }
 
     function calcularVueltos() {
-        const montoUsd = parseFloat($('#monto_usd').val()) || 0;
-        const montoBs = parseFloat($('#monto_bs').val()) || 0;
-        const totalUsd = parseFloat($('#total-usd').text().replace('$', '')) || 0;
+        const montoUsd = parseNum($('#monto_usd').val()) || 0;
+        const montoBs = parseNum($('#monto_bs').val()) || 0;
+        const totalUsd = parseNum($('#total-usd').text()) || 0;
 
         const totalPagadoUsd = montoUsd + (montoBs / tasaBcv);
         $('#total-pagado').val('$' + totalPagadoUsd.toFixed(2));
