@@ -4,7 +4,7 @@
 
 Se han realizado los cambios solicitados para:
 1. ✅ Optimizar configuración manual de tasa de cambio
-2. ✅ Crear sistema de ejecutable para Windows
+2. ✅ Sistema de ejecutable Windows (BodegaBelen.exe) listo para usar
 
 ---
 
@@ -17,84 +17,36 @@ Se han realizado los cambios solicitados para:
 ✅ Botón **"Crear Tasa Manualmente"** más visible en el dashboard  
 ✅ Mensaje claro cuando no hay tasa configurada  
 ✅ Acceso directo desde dashboard  
-✅ Funcionalidad de eliminar tasas manuales (implementada anteriormente)  
+✅ Funcionalidad de eliminar tasas manuales  
 
 ### **Cómo Usar:**
 1. Dashboard → **"Crear Tasa Manualmente"**
-2. Ingresar tasa del BCV
+2. Ingresar tasa del BS (ejemplo: 54,50)
 3. Guardar
 4. ¡Listo! Sistema funciona con esa tasa
 
 ---
 
-## 💻 **ARCHIVOS CREADOS PARA EJECUTABLE**
+## 💻 **EJECUTABLE PARA WINDOWS** ⭐ (USO PRINCIPAL)
 
-### **1. INICIAR_BODEGA.bat** ⭐ (USO INMEDIATO)
-**Archivo:** `INICIAR_BODEGA.bat`
+### **Archivo:** `dist/BodegaBelen.exe`
 
 **¿Qué hace?**
-- Activa el entorno virtual automáticamente
-- Inicia el servidor Django
-- Abre el navegador en http://127.0.0.1:8000
-- Muestra instrucciones claras
+- **SISTEMA PORTÁTIL:** Todo el sistema está dentro de este archivo.
+- No requiere instalar Python ni configurar el entorno manual.
+- Inicia el servidor Django internamente.
+- Abre el navegador automáticamente en http://127.0.0.1:8000.
+- Ejecuta las migraciones de base de datos automáticamente.
 
 **Cómo usar:**
 ```
-¡SOLO DOBLE CLICK EN EL ARCHIVO!
+¡SOLO DOBLE CLICK EN EL ARCHIVO DENTRO DE LA CARPETA dist!
 ```
 
 **Ventajas:**
-✅ No requiere instalación adicional  
-✅ Funciona AHORA MISMO  
-✅ Perfecto para uso personal  
-✅ Fácil para cualquier usuario  
-
----
-
-### **2. inicio_bodega.py** (Para crear .exe)
-**Archivo:** `inicio_bodega.py`
-
-**¿Qué hace?**
-- Script Python profesional
-- Banner de bienvenida
-- Abre navegador automáticamente
-- Manejo de errores
-
-**Cómo crear .exe:**
-```bash
-pip install pyinstaller
-pyinstaller --onefile --noconsole inicio_bodega.py
-```
-
-El `.exe` estará en: `dist/inicio_bodega.exe`
-
----
-
-### **3. installer_script.iss** (Instalador profesional)
-**Archivo:** `installer_script.iss`
-
-**¿Qué hace?**
-- Crea instalador tipo "Setup.exe"
-- Verifica que Python esté instalado
-- Crea acceso directo en escritorio
-- Desinstalador incluido
-
-**Cómo crear instalador:**
-1. Descargar Inno Setup: https://jrsoftware.org/isdl.php
-2. Abrir `installer_script.iss`
-3. Click "Compile"
-4. Listo: `Setup_BodegaBelen.exe` creado
-
----
-
-### **4. COMO_CREAR_EJECUTABLE.md** (Documentación)
-**Archivo:** `COMO_CREAR_EJECUTABLE.md`
-
-**Contiene:**
-- Guía paso a paso para crear .exe
-- Comparación de métodos
-- Solución de problemas
-- Recomendaciones según caso de uso
+✅ **Sin complicaciones:** No necesitas abrir terminales ni escribir comandos.
+✅ **Base de Datos:** Busca el archivo `db.sqlite3` en la misma carpeta del `.exe`.
+✅ **Fácil transporte:** Puedes copiar la carpeta `dist` a cualquier pendrive y funcionará.
 
 ---
 
@@ -103,19 +55,14 @@ El `.exe` estará en: `dist/inicio_bodega.exe`
 ### **FORMA MÁS SIMPLE:**
 
 ```
-1. Doble click en: INICIAR_BODEGA.bat
-2. Espera 2 segundos
-3. Se abre el navegador automáticamente
-4. ¡Listo! Ya estás usando el sistema
+1. Entra a la carpeta: dist
+2. Doble click en: BodegaBelen.exe
+3. Espera unos segundos a que cargue
+4. Se abre el navegador automáticamente
+5. ¡Listo! Ya estás usando el sistema
 ```
 
 **NO necesitas:**
-- ❌ Abrir terminal
-- ❌ Escribir comandos
-- ❌ Activar entorno virtual manualmente
-- ❌ Recordar URLs
-
-**TODO ES AUTOMÁTICO** ✨
 
 ---
 

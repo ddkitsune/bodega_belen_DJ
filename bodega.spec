@@ -28,6 +28,10 @@ hidden_imports = [
     'tablib',
 ]
 
+# Recolectar submodulos de tablib para incluir formatos (xlsx, csv, etc.)
+hidden_imports += collect_submodules('tablib')
+hidden_imports += collect_submodules('openpyxl')
+
 # Agregar submodulos de mis apps
 hidden_imports += collect_submodules('bodega_belen')
 hidden_imports += collect_submodules('inventario')

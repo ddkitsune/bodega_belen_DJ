@@ -1,12 +1,14 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 
+from PyInstaller.utils.hooks import collect_submodules
+
 a = Analysis(
     ['run_app.py'],
     pathex=[],
     binaries=[],
     datas=[('templates', 'templates'), ('static', 'static')],
-    hiddenimports=['django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes', 'django.contrib.sessions', 'django.contrib.messages', 'django.contrib.staticfiles', 'bodega_belen.middleware', 'inventario', 'ventas', 'clientes', 'import_export', 'django.templatetags.static', 'django.template.defaulttags', 'django.template.loader_tags'],
+    hiddenimports=['django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes', 'django.contrib.sessions', 'django.contrib.messages', 'django.contrib.staticfiles', 'bodega_belen.middleware', 'inventario', 'ventas', 'clientes', 'import_export', 'django.templatetags.static', 'django.template.defaulttags', 'django.template.loader_tags', 'openpyxl'] + collect_submodules('tablib'),
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

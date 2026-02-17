@@ -45,18 +45,14 @@ Sistema completo de gestión para bodegas y pequeños negocios desarrollado en D
 
 ---
 
-## 🚀 Instalación
+### Opción 1: Ejecutable para Windows (Recomendado)
 
-### Opción 1: Ejecutable para Windows (Recomendado para usuarios finales)
+1. Ve a la carpeta `dist/`
+2. Localiza el archivo `BodegaBelen.exe`
+3. Haz doble click para iniciar el sistema
+4. El sistema abrirá automáticamente el navegador en `http://127.0.0.1:8000`
 
-1. Descarga el paquete de distribución `BodegaBelen_vX.X.zip`
-2. Descomprime en una carpeta
-3. Ejecuta `BodegaBelen.exe`
-4. ¡Listo para usar!
-
-📖 **Documentación completa:** Ver `LEEME.txt` en el paquete
-
-### Opción 2: Instalación para Desarrollo
+---
 
 #### Requisitos
 - Python 3.11+
@@ -154,18 +150,13 @@ bodega_belen/
 
 ---
 
-## 🔄 Sistema de Actualización
-
-Este proyecto incluye un sistema completo de actualización segura que protege los datos del usuario:
-
 ### Para Usuarios Finales
 
-- **BACKUP_AUTOMATICO.bat** - Crea backups automáticos
-- **ACTUALIZAR.bat** - Actualización automática con respaldo
-- **RESTAURAR_BACKUP.bat** - Restaura backups anteriores
-- **verificar_datos.py** - Verifica integridad de datos
+- El sistema es portátil. Puedes llevar toda la carpeta `dist` en un pendrive.
+- Para actualizar a una nueva versión, simplemente reemplaza el archivo `BodegaBelen.exe` en la carpeta `dist`.
+- **IMPORTANTE:** Nunca borres ni muevas el archivo `db.sqlite3`, ya que contiene todos tus datos.
 
-📖 **Guía completa:** Ver `GUIA_ACTUALIZACION.md`
+📖 **Guía completa:** Ver `RESUMEN_CAMBIOS_FINALES.md`
 
 ### Para Desarrolladores
 
@@ -269,14 +260,10 @@ Distribuye el paquete completo:
 
 ---
 
-## 📖 Documentación
-
-- **LEEME.txt** - Instrucciones rápidas para usuarios
-- **GUIA_ACTUALIZACION.md** - Guía de actualización
-- **COMO_CREAR_EJECUTABLE.md** - Compilar ejecutable
-- **SISTEMA_ACTUALIZACION_RESUMEN.md** - Sistema de actualización (técnico)
-- **CHECKLIST_DISTRIBUCION.md** - Checklist para distribuir versiones
-- **DESPLIEGUE_VERCEL.md** - Despliegue en Vercel
+📖 **Documentación:**
+- **RESUMEN_CAMBIOS_FINALES.md** - Resumen de la última versión y cómo usar el .exe
+- **COMO_CREAR_EJECUTABLE.md** - Guía técnica para generar el ejecutable
+- **INSTRUCCIONES.md** - Instrucciones generales de uso
 
 ---
 

@@ -126,7 +126,7 @@ Bodeja_de_Belen/
 | Tecnología | Versión | Uso |
 |------------|---------|-----|
 | Django | 5.2.9 | Backend Framework |
-| PostgreSQL | 12+ | Base de datos |
+| SQLite | 3.x | Base de datos (Portable) |
 | Bootstrap | 5.3.0 | Frontend Framework |
 | JavaScript | ES6+ | Interactividad |
 | Python | 3.9+ | Lenguaje base |

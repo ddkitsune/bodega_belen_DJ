@@ -32,16 +32,24 @@ def importar_inventario(request):
                 return redirect('inventario:importar_inventario')
             
             # Validar extensión
-            if not archivo.name.endswith(('.xlsx', '.xls', '.csv')):
-                messages.error(request, 'El archivo debe ser Excel (.xlsx, .xls) o CSV')
+            # Obtener extensión en minúsculas
+            ext = archivo.name.split('.')[-1].lower() if '.' in archivo.name else ''
+            
+            # Validar extensión
+            if ext not in ['xlsx', 'csv']:
+                messages.error(request, 'El archivo debe ser Excel (.xlsx) o CSV')
                 return redirect('inventario:importar_inventario')
             
             # Leer archivo
             dataset = Dataset()
-            if archivo.name.endswith('.csv'):
-                imported_data = dataset.load(archivo.read().decode('utf-8'), format='csv')
-            else:
-                imported_data = dataset.load(archivo.read(), format='xlsx')
+            try:
+                if ext == 'csv':
+                    imported_data = dataset.load(archivo.read().decode('utf-8'), format='csv')
+                else:
+                    imported_data = dataset.load(archivo.read(), format='xlsx')
+            except Exception as e:
+                messages.error(request, f'Error al leer el archivo. Asegúrese de que sea un archivo válido. Detalle: {str(e)}')
+                return redirect('inventario:importar_inventario')
             
             # Dry run primero (validar sin guardar)
             producto_resource = ProductoResource()
