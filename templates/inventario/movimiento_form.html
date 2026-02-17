@@ -103,6 +103,15 @@
 </div>
 
 <script>
+    // Función robusta para convertir strings con comas a números
+    function parseNum(val) {
+        if (val === undefined || val === null || val === "") return 0;
+        if (typeof val === "number") return val;
+        let s = String(val).replace(",", ".").replace("$", "").trim();
+        let n = parseFloat(s);
+        return isNaN(n) ? 0 : n;
+    }
+
     $(document).ready(function () {
         $('.select2-producto').select2({
             theme: 'bootstrap-5',
@@ -125,9 +134,9 @@
         const cantidadHelp = document.getElementById('cantidadHelp');
 
         const productoOption = productoSelect.options[productoSelect.selectedIndex];
-        const stockActual = parseFloat(productoOption.dataset.stock) || 0;
+        const stockActual = parseNum(productoOption.dataset.stock) || 0;
         const tipo = tipoSelect.value;
-        const cantidad = parseFloat(cantidadInput.value) || 0;
+        const cantidad = parseNum(cantidadInput.value) || 0;
 
         if (!tipo || !cantidad || stockActual === 0) {
             previewAlert.style.display = 'none';
