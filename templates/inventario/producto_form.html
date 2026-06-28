@@ -39,20 +39,26 @@
                     </div>
 
                     <div class="mb-3 form-check form-switch ps-5">
+                        <!-- prettier-ignore -->
                         <input class="form-check-input" type="checkbox" name="es_por_peso" id="es_por_peso" {% if producto and producto.es_por_peso %}checked{% endif %}>
+
+
                         <label class="form-check-label fw-bold" for="es_por_peso">
                             <i class="bi bi-speedometer2"></i> Venta por Peso / Granel (Kg)
                         </label>
-                        <div class="form-text">Active esta opción para productos como Queso, Verduras o Charcutería que
-                            se venden por kilogramos (permite decimales).</div>
+                        <div class="form-text">
+                            Active esta opción para productos como Queso, Verduras o Charcutería que
+                            se venden por kilogramos (permite decimales).
+                        </div>
                     </div>
 
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="categoria" class="form-label">Categoría</label>
-                            <select name="categoria" id="categoria" class="form-select">
+                            <select name="categoria" id="categoria" class="form-select" data-live-search="true">
                                 <option value="">Sin categoría</option>
                                 {% for cat in categorias %}
+                                <!-- prettier-ignore -->
                                 <option value="{{ cat.id }}" {% if producto and producto.categoria_id == cat.id %}selected{% endif %}>{{ cat.nombre }}</option>
                                 {% endfor %}
                             </select>
@@ -75,9 +81,8 @@
                         </div>
                         <div class="col-md-6">
                             <label for="stock_minimo" class="form-label">Stock Mínimo *</label>
-                            <input type="number" name="stock_minimo" id="stock_minimo" class="form-control" min="0"
-                                step="0.001"
-                                value="{% if producto %}{{ producto.stock_minimo|stringformat:'f' }}{% else %}5{% endif %}"
+                            <input type="number" name="stock_minimo" id="stock_minimo" class="form-control" min="0" step="0.001"
+                                value="{% if producto %}{{ producto.stock_minimo|stringformat:'f' }}{% else %}1{% endif %}"
                                 required>
                         </div>
                     </div>
@@ -85,8 +90,8 @@
                     <div class="mb-3">
                         <label for="imagen" class="form-label">Imagen del Producto</label>
                         <input type="file" name="imagen" id="imagen" class="form-control" accept="image/*">
-                        {% if producto and producto.imagen %}<small class="text-muted">Imagen actual: {{ producto.imagen.name }}</small>
-                        {% endif %}
+                        <!-- prettier-ignore -->
+                        {% if producto and producto.imagen %}<small class="text-muted">Imagen actual: {{ producto.imagen.name }}</small>{% endif %}
                     </div>
 
                     <div class="d-flex gap-2">
@@ -104,46 +109,37 @@
     </div>
 
     <div class="col-md-4">
-        <div class="card">
+        <div class="card bg-info bg-opacity-10 border-info">
             <div class="card-header bg-info text-white">
-                <h5 class="mb-0">Ayuda</h5>
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Ayuda</h5>
             </div>
             <div class="card-body">
-                <p><strong>Código:</strong> Identificador único del producto</p>
-                <p><strong>Stock Mínimo:</strong> Cantidad mínima antes de alertar</p>
-                <p><strong>Precio USD:</strong> El precio en bolívares se calcula automáticamente</p>
+                <p><strong>Código:</strong> El código único o código de barras del producto.</p>
+                <p><strong>Venta por Peso:</strong> Marque esta opción si el producto se vende por kilogramos (Ej:
+                    Queso, Carne, Frutas).</p>
+                <p><strong>Stock Mínimo:</strong> El sistema le avisará cuando la cantidad sea menor a este valor.</p>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
 {% block extra_js %}
 <script>
-    $(document).ready(function () {
-        const switchPeso = $('#es_por_peso');
-        const inputCantidad = $('#cantidad');
-        const inputMinimo = $('#stock_minimo');
-        const displayUnidad = $('#unidad-display');
+    document.addEventListener('DOMContentLoaded', function () {
+        const checkPeso = document.getElementById('es_por_peso');
+        const unitDisplay = document.getElementById('unidad-display');
 
-        function actualizarUI() {
-            if (switchPeso.is(':checked')) {
-                displayUnidad.text('(Kg)');
-                inputCantidad.attr('step', '0.001');
-                inputMinimo.attr('step', '0.001');
+        function updateLabels() {
+            if (checkPeso.checked) {
+                unitDisplay.textContent = '(Kg)';
             } else {
-                displayUnidad.text('(Und)');
-                inputCantidad.attr('step', '1');
-                inputMinimo.attr('step', '1');
-
-                // Redondear valores si cambia a unidades
-                inputCantidad.val(Math.round(inputCantidad.val()));
-                inputMinimo.val(Math.round(inputMinimo.val()));
+                unitDisplay.textContent = '(Und)';
             }
         }
 
-        switchPeso.on('change', actualizarUI);
-        actualizarUI(); // Inicializar
+        checkPeso.addEventListener('change', updateLabels);
+        updateLabels();
     });
 </script>
-{% endblock %}
 {% endblock %}

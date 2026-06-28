@@ -22,8 +22,7 @@
                     <div class="alert alert-info">
                         <h6 class="alert-heading"><i class="bi bi-person"></i> Cliente</h6>
                         <p class="mb-0">
-                            <strong>{{ cliente.tipo_documento }}-{{ cliente.numero_documento }}</strong> - {{
-                            cliente.nombre_completo }}
+                            <strong>{{ cliente.tipo_documento }}-{{ cliente.numero_documento }}</strong> - {{ cliente.nombre_completo }}
                         </p>
                     </div>
 
@@ -35,8 +34,7 @@
                                 min="0.01" max="{{ cliente.deuda_total_usd }}" required>
                         </div>
                         <small class="form-text text-muted">
-                            Deuda actual del cliente: <strong class="text-danger">${{
-                                cliente.deuda_total_usd|floatformat:2 }}</strong>
+                            Deuda actual del cliente: <strong class="text-danger">${{ cliente.deuda_total_usd|floatformat:2 }}</strong>
                         </small>
                     </div>
 
@@ -130,13 +128,12 @@
     // Validar que el monto no exceda la deuda
     document.querySelector('form').addEventListener('submit', function (e) {
         const monto = parseFloat(document.getElementById('monto_usd').value);
-        const deudaActual = {{ cliente.deuda_total_usd }
-    };
+        const deudaActual = {{ cliente.deuda_total_usd }};
 
-    if (monto > deudaActual) {
-        e.preventDefault();
-        alert('⚠️ El monto de la nota de crédito no puede ser mayor a la deuda actual ($' + deudaActual.toFixed(2) + ')');
-    }
-});
+        if (monto > deudaActual) {
+            e.preventDefault();
+            alert('El monto de la nota de credito no puede ser mayor a la deuda actual ($' + deudaActual.toFixed(2) + ')');
+        }
+    });
 </script>
 {% endblock %}

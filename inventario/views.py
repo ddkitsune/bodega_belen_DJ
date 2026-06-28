@@ -3,26 +3,31 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import models
 from django.db.models import Q, F
+from decimal import Decimal
 from .models import Producto, Categoria, MovimientoInventario
 
 
 @login_required
 def producto_list(request):
-    """Lista de productos"""
-    productos = Producto.objects.filter(activo=True).select_related('categoria')
+    """Lista de productos. Por defecto solo activos; ?archivados=1 muestra los archivados."""
+    ver_archivados = request.GET.get('archivados') == '1'
+    productos = Producto.objects.filter(activo=not ver_archivados).select_related('categoria')
     
     # Filtros
     categoria_id = request.GET.get('categoria')
     stock_bajo = request.GET.get('stock_bajo')
+    agotados = request.GET.get('agotados')
     busqueda = request.GET.get('q')
     
     if categoria_id:
         productos = productos.filter(categoria_id=categoria_id)
-    if stock_bajo:
+    if stock_bajo and not ver_archivados:
         productos = productos.filter(cantidad__lte=F('stock_minimo'))
+    if agotados and not ver_archivados:
+        productos = productos.filter(cantidad__lte=0)
     if busqueda:
         productos = productos.filter(
-            Q(nombre__icontains=busqueda) | 
+            Q(nombre__icontains=busqueda) |
             Q(codigo__icontains=busqueda)
         )
     
@@ -30,7 +35,8 @@ def producto_list(request):
     
     return render(request, 'inventario/producto_list.html', {
         'productos': productos,
-        'categorias': categorias
+        'categorias': categorias,
+        'ver_archivados': ver_archivados,
     })
 
 
@@ -46,6 +52,16 @@ def producto_detail(request, pk):
     })
 
 
+def clean_decimal(value, default=0):
+    if not value: return default
+    try:
+        if isinstance(value, str):
+            value = value.replace(',', '.')
+        from decimal import Decimal
+        return Decimal(str(value))
+    except (ValueError, Exception):
+        return default
+
 @login_required
 def producto_create(request):
     """Crear producto"""
@@ -55,9 +71,9 @@ def producto_create(request):
             nombre = request.POST.get('nombre')
             descripcion = request.POST.get('descripcion', '')
             categoria_id = request.POST.get('categoria')
-            precio_usd = request.POST.get('precio_usd')
-            cantidad = request.POST.get('cantidad', 0)
-            stock_minimo = request.POST.get('stock_minimo', 5)
+            precio_usd = clean_decimal(request.POST.get('precio_usd'), 0)
+            cantidad = clean_decimal(request.POST.get('cantidad'), 0)
+            stock_minimo = clean_decimal(request.POST.get('stock_minimo'), 5)
             # Checkbox returns 'on' if checked, None otherwise
             es_por_peso = request.POST.get('es_por_peso') == 'on'
             
@@ -94,9 +110,9 @@ def producto_update(request, pk):
             producto.descripcion = request.POST.get('descripcion', '')
             categoria_id = request.POST.get('categoria')
             producto.categoria_id = categoria_id if categoria_id else None
-            producto.precio_usd = request.POST.get('precio_usd')
-            producto.cantidad = request.POST.get('cantidad')
-            producto.stock_minimo = request.POST.get('stock_minimo')
+            producto.precio_usd = clean_decimal(request.POST.get('precio_usd'), producto.precio_usd)
+            producto.cantidad = clean_decimal(request.POST.get('cantidad'), producto.cantidad)
+            producto.stock_minimo = clean_decimal(request.POST.get('stock_minimo'), producto.stock_minimo)
             producto.es_por_peso = request.POST.get('es_por_peso') == 'on'
             producto.save()
             
@@ -115,16 +131,30 @@ def producto_update(request, pk):
 
 @login_required
 def producto_delete(request, pk):
-    """Eliminar producto (desactivar)"""
+    """Eliminar producto (desactivar/archivar)"""
     producto = get_object_or_404(Producto, pk=pk)
     
     if request.method == 'POST':
         producto.activo = False
         producto.save()
-        messages.success(request, f'Producto {producto.nombre} desactivado')
+        messages.success(request, f'Producto {producto.nombre} archivado. Ya no aparecerá en la lista ni al facturar.')
         return redirect('inventario:producto_list')
     
     return render(request, 'inventario/producto_confirm_delete.html', {'producto': producto})
+
+
+@login_required
+def producto_reactivar(request, pk):
+    """Reactivar un producto archivado."""
+    producto = get_object_or_404(Producto, pk=pk)
+    
+    if request.method == 'POST':
+        producto.activo = True
+        producto.save()
+        messages.success(request, f'Producto {producto.nombre} reactivado')
+        return redirect('inventario:producto_list')
+    
+    return render(request, 'inventario/producto_confirm_reactivar.html', {'producto': producto})
 
 
 @login_required
