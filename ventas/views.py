@@ -4,13 +4,32 @@ from django.contrib import messages
 from django.db import models, transaction
 from django.db.models import Sum, Q, Count, F
 from django.utils import timezone
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from datetime import datetime, timedelta
 import requests
 
+from django.conf import settings
 from .models import TasaCambio, Factura, ItemFactura, Pago
 from inventario.models import Producto
 from clientes.models import Cliente
+
+
+def clean_decimal(value, default=0):
+    if not value:
+        return Decimal(str(default))
+    try:
+        if isinstance(value, str):
+            value = value.strip().replace('$', '').replace(' ', '')
+            if ',' in value and '.' in value:
+                if value.rfind(',') > value.rfind('.'):
+                    value = value.replace('.', '').replace(',', '.')
+                else:
+                    value = value.replace(',', '')
+            else:
+                value = value.replace(',', '.')
+        return Decimal(str(value))
+    except (ValueError, InvalidOperation, Exception):
+        return Decimal(str(default))
 
 
 @login_required
@@ -45,8 +64,8 @@ def dashboard(request):
     # Tasa de cambio actual
     tasa_actual = TasaCambio.objects.first()
     
-    # Últimas facturas
-    ultimas_facturas = Factura.objects.all()[:10]
+    # Últimas facturas (con select_related para evitar N+1 queries)
+    ultimas_facturas = Factura.objects.select_related('cliente', 'vendedor').all()[:10]
     
     context = {
         'total_ventas_mes_usd': total_ventas_mes_usd,
@@ -151,7 +170,7 @@ def tasa_cambio_delete(request, pk):
 @login_required
 def factura_list(request):
     """Lista de facturas con filtros"""
-    facturas = Factura.objects.all()
+    facturas = Factura.objects.select_related('cliente', 'vendedor').all()
     
     # Filtros
     estado = request.GET.get('estado')
@@ -188,7 +207,7 @@ def factura_create(request):
             with transaction.atomic():
                 cliente_id = request.POST.get('cliente')
                 tipo_venta = request.POST.get('tipo_venta')
-                descuento_usd = Decimal(request.POST.get('descuento_usd', '0.00'))
+                descuento_usd = clean_decimal(request.POST.get('descuento_usd'), 0)
                 
                 cliente = None
                 if cliente_id:
@@ -211,17 +230,17 @@ def factura_create(request):
                 cantidades = request.POST.getlist('cantidad[]')
                 precios = request.POST.getlist('precio[]')
                 
+                control_stock = not getattr(settings, 'VENTA_SIN_CONTROL_STOCK', False)
                 for i, producto_id in enumerate(productos_ids):
                     if producto_id:
                         producto = get_object_or_404(Producto, id=producto_id)
-                        cantidad = Decimal(cantidades[i])
-                        precio = Decimal(precios[i])
+                        cantidad = clean_decimal(cantidades[i], 0)
+                        precio = clean_decimal(precios[i], 0)
                         
-                        # Verificar stock
-                        if producto.cantidad < cantidad:
-                            raise ValueError(f'Stock insuficiente para {producto.nombre}')
+                        if control_stock:
+                            if producto.cantidad < cantidad:
+                                raise ValueError(f'Stock insuficiente para {producto.nombre}')
                         
-                        # Crear item
                         ItemFactura.objects.create(
                             factura=factura,
                             producto=producto,
@@ -229,8 +248,8 @@ def factura_create(request):
                             precio_unitario_usd=precio
                         )
                         
-                        # Reducir stock
-                        producto.reducir_stock(cantidad)
+                        if control_stock:
+                            producto.reducir_stock(cantidad)
                 
                 # Calcular totales
                 factura.calcular_totales()
@@ -244,8 +263,8 @@ def factura_create(request):
                 if tipo_venta == 'CONTADO':
                     metodo_pago = request.POST.get('metodo_pago')
                     referencia = request.POST.get('referencia', '')
-                    monto_usd = Decimal(request.POST.get('monto_usd', '0.00'))
-                    monto_bs = Decimal(request.POST.get('monto_bs', '0.00'))
+                    monto_usd = clean_decimal(request.POST.get('monto_usd'), 0)
+                    monto_bs = clean_decimal(request.POST.get('monto_bs'), 0)
                     
                     # Convertir todo a Bs para el campo monto_recibido_bs
                     tasa = TasaCambio.get_tasa_actual()
@@ -270,14 +289,18 @@ def factura_create(request):
             messages.error(request, f'Error al crear factura: {str(e)}')
             return redirect('ventas:factura_create')
     
-    # GET
-    productos = Producto.objects.filter(activo=True, cantidad__gt=0)
+    # GET: todos los activos; si hay control de stock solo se muestran con stock > 0
+    control_stock = not getattr(settings, 'VENTA_SIN_CONTROL_STOCK', False)
+    productos = Producto.objects.filter(activo=True)
+    if control_stock:
+        productos = productos.filter(cantidad__gt=0)
     clientes = Cliente.objects.filter(activo=True)
     
     context = {
         'productos': productos,
         'clientes': clientes,
         'tasa_actual': TasaCambio.get_tasa_actual(),
+        'venta_sin_control_stock': getattr(settings, 'VENTA_SIN_CONTROL_STOCK', False),
     }
     
     return render(request, 'ventas/factura_create.html', context)
@@ -306,7 +329,7 @@ def factura_pagar(request, pk):
     if request.method == 'POST':
         try:
             metodo = request.POST.get('metodo')
-            monto_recibido = Decimal(request.POST.get('monto_recibido'))
+            monto_recibido = clean_decimal(request.POST.get('monto_recibido'), 0)
             referencia = request.POST.get('referencia', '')
             
             # Crear pago
@@ -369,13 +392,15 @@ def reportes(request):
     if not fecha_hasta:
         fecha_hasta = timezone.now().date()
     
-    facturas = Factura.objects.filter(
+    facturas = Factura.objects.select_related('cliente', 'vendedor').filter(
         fecha__date__gte=fecha_desde,
         fecha__date__lte=fecha_hasta,
         estado__in=['PAGADA', 'PARCIAL', 'PENDIENTE']
     )
     
     total_ventas_usd = facturas.aggregate(Sum('total_usd'))['total_usd__sum'] or Decimal('0.00')
+    ventas_contado = facturas.filter(tipo_venta='CONTADO').count()
+    ventas_credito = facturas.filter(tipo_venta='CREDITO').count()
     
     context = {
         'facturas': facturas,
@@ -383,6 +408,8 @@ def reportes(request):
         'total_ventas_bs': TasaCambio.usd_to_bs(total_ventas_usd),
         'fecha_desde': fecha_desde,
         'fecha_hasta': fecha_hasta,
+        'ventas_contado': ventas_contado,
+        'ventas_credito': ventas_credito,
     }
     
     return render(request, 'ventas/reportes.html', context)
